@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 	ui->setupUi(this);
 	show();
-	
+
 	cv_image = cv::Mat(480, 640, CV_8UC3);
 	osgImage = NULL;
 	rgb = new uint8_t[640*480*3];
@@ -46,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	cloud = NULL;
 
 	viewer = new pcl::visualization::CloudViewer("cloud");
-   
+
 	connect(&timerOSG, SIGNAL(timeout()), this, SLOT(computeOSG()));
 	timerOSG.start(2);
 	connect(ui->loadButton, SIGNAL(clicked()), this, SLOT(button_slot()));
@@ -66,7 +66,7 @@ void MainWindow::initCamera()
 {
 #ifdef READ_DATA_FROM_DEVICE
 	int tries = 0;
-	
+
 	while (tries < 3)
 	{
 		try
@@ -96,7 +96,7 @@ void MainWindow::initCamera()
 			sleep(2);
 		}
 	}
-	
+
 	if (tries)
 	{
 		exit(-1);
@@ -122,18 +122,18 @@ void MainWindow::init3D()
 	osg::Geode* shapeGeode = new osg::Geode();
 	pat->addChild(shapeGeode);
 
-	
+
 	float k = 1.3;
 	osg::Box *box = new osg::Box( osg::Vec3(0, 0, 0), -10.24*k, 7.68*k, 0.01);
 	osg::ShapeDrawable *boxDrawable = new osg::ShapeDrawable(box);
  	boxDrawable->setColor(osg::Vec4(1,1,1,1));
 	shapeGeode->addDrawable(boxDrawable);
-	
+
 	osgImage = new osg::Image;
 	osgTexture = new osg::Texture2D;
 	bStateSetIMAGEN = shapeGeode->getOrCreateStateSet();
 	bStateSetIMAGEN->setTextureMode(0, GL_TEXTURE_GEN_R, osg::StateAttribute::ON);
-	
+
 }
 
 
@@ -145,7 +145,7 @@ void MainWindow::computeOSG()
 	cvWaitKey(1);
 
 
-	osgImage->setImage(640, 480, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, bb, osg::Image::NO_DELETE); 
+	osgImage->setImage(640, 480, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, bb, osg::Image::NO_DELETE);
 	osgTexture->setImage(0, osgImage);
 	bStateSetIMAGEN->setTextureAttributeAndModes(0, osgTexture, osg::StateAttribute::ON);
 	osgw->frame();
@@ -178,12 +178,12 @@ void MainWindow::computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthI
 {
 	static uint32_t count = 0;
 	count++;
-	
+
 	if (osgImage == NULL)
 		return;
 
 	dimg->fillDepthImage(640, 480, bf);
-	
+
 	drawColors();
 }
 
@@ -196,9 +196,9 @@ void MainWindow::readPCD()
 	if (osgImage == NULL)
 		return;
 
-	if (pcl::io::loadPCDFile<pcl::PointXYZRGBA> (std::string("data")+std::to_string(ui->spinBox->value())+std::string(".pcd"), *cloud) == -1)
+	if (pcl::io::loadPCDFile<pcl::PointXYZRGBA> (std::string("../data")+std::to_string(ui->spinBox->value())+std::string(".pcd"), *cloud) == -1)
 	{
-		PCL_ERROR ("Couldn't read file pcd: %s\n", (std::string("data")+std::to_string(ui->spinBox->value())+std::string(".pcd").c_str()));
+		PCL_ERROR ("Couldn't read file pcd: %s\n", (std::string("../data")+std::to_string(ui->spinBox->value())+std::string(".pcd").c_str()));
 		exit(1);
 	}
 	viewer->showCloud(cloud);
@@ -210,8 +210,8 @@ void MainWindow::readDepth()
 		return;
 
 	printf("depth\n");
-	readBufferFromFile(std::string("data")+std::to_string(ui->spinBox->value())+std::string(".depth"), bf, 640*480*4);
-	readBufferFromFile(std::string("data")+std::to_string(ui->spinBox->value())+std::string(".rgb"), rgb, 640*480*3);
+	readBufferFromFile(std::string("../data")+std::to_string(ui->spinBox->value())+std::string(".depth"), bf, 640*480*4);
+	readBufferFromFile(std::string("../data")+std::to_string(ui->spinBox->value())+std::string(".rgb"), rgb, 640*480*3);
 	drawColors();
 }
 #endif
@@ -237,14 +237,14 @@ void MainWindow::drawColors()
 	float maxP = -1;
 	float min = -1;
 	float max = -1;
-	
+
 	for (uint32_t r=0; r<480; r++)
 	{
 		for (uint32_t c=0; c<640; c++)
 		{
 			const uint32_t idx = r*640+c;
 			float v = bf[idx];
-			
+
 			if (std::isnan(v))
 				continue;
 			if (v>maxP)
@@ -255,7 +255,7 @@ void MainWindow::drawColors()
 			float minV = 0.75;
 			float maxV = 1.1;
 
-			
+
 			if (v<minV)
 			{
 				bb[idx*3 + 0] = bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
@@ -273,4 +273,3 @@ void MainWindow::drawColors()
 		}
 	}
 }
-
