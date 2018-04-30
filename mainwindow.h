@@ -36,6 +36,24 @@ namespace Ui
 	class MainWindow;
 }
 
+typedef struct rgb_color
+{
+	uchar r;
+	uchar g;
+	uchar b;
+	public:
+	rgb_color(){
+		r=255;
+		g=255;
+		b=255;
+	}
+	rgb_color(uchar r_, uchar g_, uchar b_){
+		r=r_;
+		g=g_;
+		b=b_;
+	};
+} rgb_color;
+
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -64,6 +82,7 @@ private slots:
 
 
 private:
+	std::map<float,rgb_color> paleta;
 	QTimer timerOSG;
 	Ui::MainWindow *ui;
 	pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud;
