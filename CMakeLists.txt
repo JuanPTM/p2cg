@@ -55,6 +55,7 @@ add_definitions(${PCL_DEFINITIONS})
 #
 # Link
 #
+list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
 add_executable(practica2 ${SOURCES} )
 qt5_use_modules(practica2 Widgets OpenGL)
 target_link_libraries(practica2 ${LIBS} ${PCL_LIBRARIES} ${QT_LIBRARIES} ${OPENGL_LIBRARIES} libapriltags.a -lopencv_highgui ${OpenCV_LIBS} )

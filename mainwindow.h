@@ -12,7 +12,7 @@
 
 #ifndef Q_MOC_RUN
 	#include <pcl/visualization/pcl_visualizer.h>
-	#include <pcl/io/openni2_grabber.h>
+	// #include <pcl/io/openni2_grabber.h>
 	#include <pcl/visualization/boost.h>
 
 	#include <opencv2/core/core.hpp>
@@ -73,7 +73,7 @@ private:
 #ifdef READ_DATA_FROM_DEVICE
 	pcl::io::OpenNI2Grabber* grabber;
 #endif
-	
+
 	cv::Mat cv_image;
 	uint8_t *rgb;
 	float *bf;
