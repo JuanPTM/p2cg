@@ -12,7 +12,7 @@
 
 #ifndef Q_MOC_RUN
 	#include <pcl/visualization/pcl_visualizer.h>
-	#include <pcl/io/openni2_grabber.h>
+//	#include <pcl/io/openni2_grabber.h>
 	#include <pcl/visualization/boost.h>
 
 	#include <opencv2/core/core.hpp>
