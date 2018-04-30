@@ -83,6 +83,8 @@ private slots:
 
 private:
 	std::map<float,rgb_color> paleta;
+	rgb_color ucharize(float v);
+
 	QTimer timerOSG;
 	Ui::MainWindow *ui;
 	pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud;

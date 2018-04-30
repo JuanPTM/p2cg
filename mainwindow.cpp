@@ -21,7 +21,7 @@ long map(long x, long in_min, long in_max, long out_min, long out_max)
 }
 
 //AQUI AÑADIR LA PALETA
-rgb_color ucharize(float v)
+rgb_color MainWindow::ucharize(float v)
 {
 	if (v >= 255)
 		return rgb_color(0,0,80);
