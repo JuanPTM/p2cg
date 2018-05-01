@@ -55,27 +55,32 @@ pcl::PointCloud< pcl::PointXYZRGBA >::Ptr copy_pointcloud(pcl::PointCloud< pcl::
 	return copy_cloud;
 }
 
+std::map<float,rgb_color> loadPaleta()
+{
+	std::string k,r,g,b;
+	ifstream readFile("../paleta.cfg");
+	std::string line;
+	std::map<float,rgb_color> paleta;
+	while(std::getline(readFile,line))   {
+    std::stringstream iss(line);
+    std::getline(iss, k, '=');
+    std::getline(iss, r, ',');
+    std::getline(iss, g, ',');
+    std::getline(iss, b, ',');
+		// std::cout<<std::stof(k)<<" "<<std::stoi(r)<<" "<<std::stoi(g)<<" "<<std::stoi(b)<<std::endl;
+		paleta[std::stof(k)] = rgb_color(std::stoi(r),std::stoi(g),std::stoi(b));
+	}
+	readFile.close();
+	return paleta;
+}
+
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
 	setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 	ui->setupUi(this);
 	show();
-
-	paleta[0.0]= rgb_color(255,255,255);
-	paleta[25.23]= rgb_color(206,206,206);
-	paleta[38.46]= rgb_color(161,161,161);
-	paleta[50.88]= rgb_color(130,30,30);		//Rojo oscuro
-	paleta[82.98]= rgb_color(161,67,0);		//Rojo claro
-	paleta[110.94]= rgb_color(0,97,71); 		//Verde fuerte
-	paleta[135.73]= rgb_color(16,122,47);  	//verde clarito
-	paleta[146.00]= rgb_color(232,215,125); //Arena
-	paleta[157.90]= rgb_color(176,226,255); //Azul final de mar
-	paleta[166.73]= rgb_color(135,206,250);
-	paleta[180.46]= rgb_color(24,140,205);
-	paleta[192.23]= rgb_color(19,108,160);
-	paleta[211.85]= rgb_color(0,50,102);
-	paleta[235.38]= rgb_color(0,30,100);
-	paleta[255.00]= rgb_color(0,0,80);
+  paleta = loadPaleta();
 	cv_image = cv::Mat(480, 640, CV_8UC3);
 	osgImage = NULL;
 	rgb = new uint8_t[640*480*3];

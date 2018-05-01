@@ -9,7 +9,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 #ifndef Q_MOC_RUN
 	#include <pcl/visualization/pcl_visualizer.h>
 	// #include <pcl/io/openni2_grabber.h>
