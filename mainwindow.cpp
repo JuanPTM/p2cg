@@ -245,9 +245,9 @@ void MainWindow::readPCD()
 	if (osgImage == NULL)
 		return;
 
-	if (pcl::io::loadPCDFile<pcl::PointXYZRGBA> (std::string("../data")+std::to_string(ui->spinBox->value())+std::string(".pcd"), *cloud) == -1)
+	if (pcl::io::loadPCDFile<pcl::PointXYZRGBA> (std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".pcd"), *cloud) == -1)
 	{
-		PCL_ERROR ("Couldn't read file pcd: %s\n", (std::string("../data")+std::to_string(ui->spinBox->value())+std::string(".pcd").c_str()));
+		PCL_ERROR ("Couldn't read file pcd: %s\n", (std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".pcd").c_str()));
 		exit(1);
 	}
 	viewer->showCloud(cloud);
@@ -259,8 +259,8 @@ void MainWindow::readDepth()
 		return;
 
 	printf("depth\n");
-	readBufferFromFile(std::string("../data")+std::to_string(ui->spinBox->value())+std::string(".depth"), bf, 640*480*4);
-	readBufferFromFile(std::string("../data")+std::to_string(ui->spinBox->value())+std::string(".rgb"), rgb, 640*480*3);
+	readBufferFromFile(std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".depth"), bf, 640*480*4);
+	readBufferFromFile(std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".rgb"), rgb, 640*480*3);
 	drawColors();
 }
 #endif
