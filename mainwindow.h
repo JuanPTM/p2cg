@@ -13,6 +13,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 #ifndef Q_MOC_RUN
 	#include <pcl/visualization/pcl_visualizer.h>
 	// #include <pcl/io/openni2_grabber.h>
@@ -33,6 +35,7 @@
 #include <QGraphicsPixmapItem>
 
 #include <osgview.h>
+using namespace cv;
 
 namespace Ui
 {

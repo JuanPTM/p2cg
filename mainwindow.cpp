@@ -23,10 +23,6 @@ long map(long x, long in_min, long in_max, long out_min, long out_max)
 //AQUI AÑADIR LA PALETA
 rgb_color MainWindow::ucharize(float v)
 {
-	if((int)v%10 == 0)
-	{
-		return rgb_color(0,0,0);
-	}
 	if (v >= 255)
 		return rgb_color(0,0,80);
 	if (v <= 0)
@@ -280,13 +276,38 @@ void MainWindow::button_slot()
 #endif
 }
 
+
+Mat FILTER(Mat input)
+{
+	for (int r=0; r<480; r++)
+	{
+		for (int c=0; c<640; c++)
+		{
+				if(input.at<uchar>(r, c) != 0  && input.at<uchar>(r+1, c) != 0 && input.at<uchar>(r, c+1) != 0 && input.at<uchar>(r+1, c+1) != 0 )
+				{
+					input.at<uchar>(r, c) = 0;
+				}
+		}
+	}
+	return input;
+}
+
 void MainWindow::drawColors()
 {
 	float minP = -1;
 	float maxP = -1;
-	float min = -1;
-	float max = -1;
-
+	// float min = -1;
+	// float max = -1;
+	cv::Mat mask = cv::Mat::zeros(480, 640, CV_8U);
+  cv::Mat out = cv::Mat::zeros(480, 640, CV_8U);
+	int erosion_size = 2;
+	int erosion_dilate = 3;
+	Mat element_erosion = getStructuringElement(cv::MORPH_RECT,
+	      cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
+	      cv::Point(erosion_size, erosion_size) );
+	Mat element_dilate = getStructuringElement(cv::MORPH_RECT,
+				cv::Size(2 * erosion_dilate + 1, 2 * erosion_dilate + 1),
+				cv::Point(erosion_dilate, erosion_dilate) );
 	for (uint32_t r=0; r<480; r++)
 	{
 		for (uint32_t c=0; c<640; c++)
@@ -311,14 +332,35 @@ void MainWindow::drawColors()
 			}
 			else
 			{
+
 				v -= minV;
 				v /= maxV-minV;
 				v = normalizeFloat(v*255);
+				if((int)v%10 == 0)
+				{
+					mask.at<uchar>((int)r,(int)c) = 255;
+					// return rgb_color(0,0,0);
+				}
 				rgb_color c = ucharize(v);
 				bb[idx*3 + 0] = (uint8_t)c.r;
 				bb[idx*3 + 1] = (uint8_t)c.g;
 				bb[idx*3 + 2] = (uint8_t)c.b;
+
 			}
+		}
+	}
+	out = FILTER(mask);
+	for (int r=0; r<480; r++)
+	{
+		for (int c=0; c<640; c++)
+		{
+				const uint32_t idx = r*640+c;
+				if(out.at<uchar>(r, c) == 255 )
+				{
+					bb[idx*3 + 0] = (uint8_t)0;
+					bb[idx*3 + 1] = (uint8_t)0;
+					bb[idx*3 + 2] = (uint8_t)0;
+				}
 		}
 	}
 }
