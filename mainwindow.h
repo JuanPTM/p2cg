@@ -13,6 +13,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <stdlib.h>
+#include <math.h>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #ifndef Q_MOC_RUN
@@ -59,7 +61,28 @@ typedef struct rgb_color
 		b=b_;
 	};
 } rgb_color;
-
+typedef struct point
+{
+	int x;
+	int y;
+	public:
+	point(){
+		x=0;
+		y=0;
+	}
+	point(int x_, int y_){
+		x=x_;
+		y=y_;
+	};
+	bool operator==(const point& other) const
+  {
+		return (x==other.x && y==other.y);
+	};
+	bool adjacent(const point& other) const
+	{
+		return (abs(x-other.x) == 1 && abs(y-other.y) == 1);
+	};
+} point;
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -89,6 +112,9 @@ private slots:
 
 private:
 	std::map<float,rgb_color> paleta;
+	std::vector<std::vector<point>>pointsByLevel;
+	void searchWay(point src, int srcLevel, point dst, int dstLevel);
+
 	rgb_color ucharize(float v);
 
 	QTimer timerOSG;

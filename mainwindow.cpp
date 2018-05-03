@@ -77,6 +77,8 @@ std::map<float,rgb_color> loadPaleta()
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
+	for(int i = 0; i <= ceil(255/10); i++)
+		pointsByLevel.push_back(std::vector<point>());
 	setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 	ui->setupUi(this);
 	show();
@@ -292,6 +294,15 @@ Mat FILTER(Mat input)
 	return input;
 }
 
+void MainWindow::searchWay(point src, int srcLevel, point dst, int dstLevel)
+{
+	std::vector<point> pointsToWay;
+	for(int i = srcLevel; i<=dstLevel; i++)
+		pointsToWay.insert(pointsToWay.begin(),pointsByLevel[i].begin(), pointsByLevel[i].end());
+
+
+}
+
 void MainWindow::drawColors()
 {
 	float minP = -1;
@@ -341,6 +352,8 @@ void MainWindow::drawColors()
 					mask.at<uchar>((int)r,(int)c) = 255;
 					// return rgb_color(0,0,0);
 				}
+				int level = ceil(v/10);
+				pointsByLevel[level].push_back(point((int)r,(int)c));
 				rgb_color c = ucharize(v);
 				bb[idx*3 + 0] = (uint8_t)c.r;
 				bb[idx*3 + 1] = (uint8_t)c.g;
