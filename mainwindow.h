@@ -15,8 +15,11 @@
 #include <string>
 #include <stdlib.h>
 #include <math.h>
+#include "luz.h"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include <AprilTags/TagDetector.h>
+#include <AprilTags/Tag36h11.h>
 #ifndef Q_MOC_RUN
 	#include <pcl/visualization/pcl_visualizer.h>
 	// #include <pcl/io/openni2_grabber.h>
@@ -114,7 +117,7 @@ private:
 	std::map<float,rgb_color> paleta;
 	std::vector<std::vector<point>>pointsByLevel;
 	void searchWay(point src, int srcLevel, point dst, int dstLevel);
-
+	void processTags();
 	rgb_color ucharize(float v);
 
 	QTimer timerOSG;
@@ -122,6 +125,7 @@ private:
 	pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud;
 	pcl::visualization::CloudViewer *viewer;
 	OsgView *osgw;
+	::AprilTags::TagDetector* tagDetector;
 
 #ifdef READ_DATA_FROM_DEVICE
 	pcl::io::OpenNI2Grabber* grabber;
@@ -134,7 +138,7 @@ private:
 	osg::Image *osgImage;
 	osg::Texture *osgTexture;
 	osg::StateSet *bStateSetIMAGEN;
-
+	Luz *luzblanca, *luzroja;
 
 	static constexpr float minV = 0.75;
 	static constexpr float maxV = 1.1;

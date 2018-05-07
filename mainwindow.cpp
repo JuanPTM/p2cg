@@ -15,7 +15,7 @@ float normalizeFloat(float v)
 	return v;
 }
 
-long map(long x, long in_min, long in_max, long out_min, long out_max)
+long mymap(long x, long in_min, long in_max, long out_min, long out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
@@ -42,9 +42,9 @@ rgb_color MainWindow::ucharize(float v)
 		}
 	}
 
-	uchar r = (uchar)map(v,prev_k,next_k,prev.r,next.r);
-	uchar g = (uchar)map(v,prev_k,next_k,prev.g,next.g);
-	uchar b = (uchar)map(v,prev_k,next_k,prev.b,next.b);
+	uchar r = (uchar)mymap(v,prev_k,next_k,prev.r,next.r);
+	uchar g = (uchar)mymap(v,prev_k,next_k,prev.g,next.g);
+	uchar b = (uchar)mymap(v,prev_k,next_k,prev.b,next.b);
 	return rgb_color(r,g,b);
 }
 
@@ -88,6 +88,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	rgb = new uint8_t[640*480*3];
 	bb = new uint8_t[640*480*3];
 	bf = new float[640*480*3];
+	tagDetector = new ::AprilTags::TagDetector(::AprilTags::tagCodes36h11);
 	init3D();
 
 	cloud = NULL;
@@ -151,6 +152,7 @@ void MainWindow::initCamera()
 #endif
 }
 
+
 void MainWindow::init3D()
 {
 	/// osgview
@@ -180,7 +182,8 @@ void MainWindow::init3D()
 	osgTexture = new osg::Texture2D;
 	bStateSetIMAGEN = shapeGeode->getOrCreateStateSet();
 	bStateSetIMAGEN->setTextureMode(0, GL_TEXTURE_GEN_R, osg::StateAttribute::ON);
-
+	luzblanca = new Luz(osgw, 0, osg::Vec4(0.0,0.0,0.0,0.0), osg::Vec4(1.0,1.0,1.0,1.0), osg::Vec4(1.0,1.0,1.0,1.0), osg::Vec4(0,0,0,1.0));
+	luzroja = new Luz(osgw, 1, osg::Vec4(0.0,0.0,0.0,0.0), osg::Vec4(1.0,0,0,1.0), osg::Vec4(1.0,0,0,1.0), osg::Vec4(0,0,0,1.0));
 }
 
 
@@ -196,8 +199,8 @@ void MainWindow::computeOSG()
 	osgTexture->setImage(0, osgImage);
 	bStateSetIMAGEN->setTextureAttributeAndModes(0, osgTexture, osg::StateAttribute::ON);
 	osgw->frame();
+	processTags();
 }
-
 
 #ifdef READ_DATA_FROM_DEVICE
 void MainWindow::computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud_l)
@@ -208,7 +211,6 @@ void MainWindow::computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr 
 	*cloud = *cloud_l;
 	viewer->showCloud(cloud_l);
 }
-
 
 void MainWindow::computeImages(const boost::shared_ptr<pcl::io::openni2::Image> &o_image)
 {
@@ -234,7 +236,6 @@ void MainWindow::computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthI
 	drawColors();
 }
 
-
 #else
 void MainWindow::readPCD()
 {
@@ -251,6 +252,7 @@ void MainWindow::readPCD()
 	viewer->showCloud(cloud);
 
 }
+
 void MainWindow::readDepth()
 {
 	if (osgImage == NULL)
@@ -262,7 +264,6 @@ void MainWindow::readDepth()
 	drawColors();
 }
 #endif
-
 
 void MainWindow::button_slot()
 {
@@ -278,7 +279,33 @@ void MainWindow::button_slot()
 #endif
 }
 
-
+void MainWindow::processTags()
+{
+	std::cout<<__FUNCTION__<<std::endl;
+	//Apagar luces
+	luzroja->switchLuz(false);
+	luzblanca->switchLuz(false);
+  //Procesar AprilTags
+	Mat imgray;
+	cv::cvtColor(cv_image, imgray, cv::COLOR_RGB2GRAY);
+	cv::imwrite("img.png",imgray);
+	vector<::AprilTags::TagDetection> detections = tagDetector->extractTags(imgray);
+	std::cout<<detections.size()<<std::endl;
+	for(auto april: detections)
+	{
+		std::cout<<"Detectado april "<<april.id<<std::endl;
+		if(april.id == 31)
+		{
+			luzroja->move(0, 0, 10);
+			luzroja->switchLuz(true);
+		}
+		else if(april.id == 30)
+		{
+			luzblanca->move(0, 0, 10);
+			luzblanca->switchLuz(true);
+		}
+	}
+}
 Mat FILTER(Mat input)
 {
 	for (int r=0; r<480; r++)
@@ -326,8 +353,12 @@ void MainWindow::drawColors()
 			const uint32_t idx = r*640+c;
 			float v = bf[idx];
 
-			if (std::isnan(v))
+			if (std::isnan(v)){
+				bb[idx*3 + 0] = (uint8_t)0;
+				bb[idx*3 + 1] = (uint8_t)0;
+				bb[idx*3 + 2] = (uint8_t)0;
 				continue;
+			}
 			if (v>maxP)
 				maxP = v;
 			if (v<minP or minP<0)
@@ -353,7 +384,7 @@ void MainWindow::drawColors()
 					// return rgb_color(0,0,0);
 				}
 				int level = ceil(v/10);
-				pointsByLevel[level].push_back(point((int)r,(int)c));
+				pointsByLevel.at(level-1).push_back(point((int)r,(int)c));
 				rgb_color c = ucharize(v);
 				bb[idx*3 + 0] = (uint8_t)c.r;
 				bb[idx*3 + 1] = (uint8_t)c.g;
@@ -363,6 +394,7 @@ void MainWindow::drawColors()
 		}
 	}
 	out = FILTER(mask);
+
 	for (int r=0; r<480; r++)
 	{
 		for (int c=0; c<640; c++)
