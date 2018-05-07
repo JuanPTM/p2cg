@@ -178,12 +178,12 @@ void MainWindow::init3D()
  	boxDrawable->setColor(osg::Vec4(1,1,1,1));
 	shapeGeode->addDrawable(boxDrawable);
 
-	osgImage = new osg::Image;
+	osgImage = new osg::Image; 
 	osgTexture = new osg::Texture2D;
 	bStateSetIMAGEN = shapeGeode->getOrCreateStateSet();
 	bStateSetIMAGEN->setTextureMode(0, GL_TEXTURE_GEN_R, osg::StateAttribute::ON);
-	luzblanca = new Luz(osgw, 0, osg::Vec4(0.0,0.0,0.0,0.0), osg::Vec4(1.0,1.0,1.0,1.0), osg::Vec4(1.0,1.0,1.0,1.0), osg::Vec4(0,0,0,1.0));
-	luzroja = new Luz(osgw, 1, osg::Vec4(0.0,0.0,0.0,0.0), osg::Vec4(1.0,0,0,1.0), osg::Vec4(1.0,0,0,1.0), osg::Vec4(0,0,0,1.0));
+	luzblanca = new Luz(osgw, 0, osg::Vec4(0.0,0.0,0.0,1.0), osg::Vec4(1.0,1.0,1.0,1.0), osg::Vec4(1.0,1.0,1.0,1.0), osg::Vec4(0,0,0,1.0));
+	luzroja = new Luz(osgw, 1, osg::Vec4(0.0,0.0,0.0,1.0), osg::Vec4(1.0,0.,0.,1.0), osg::Vec4(1.0,0.,0.,1.0), osg::Vec4(0,0,0,1.0));
 }
 
 
@@ -281,27 +281,34 @@ void MainWindow::button_slot()
 
 void MainWindow::processTags()
 {
-	std::cout<<__FUNCTION__<<std::endl;
+	
 	//Apagar luces
 	luzroja->switchLuz(false);
 	luzblanca->switchLuz(false);
-  //Procesar AprilTags
+  	//Procesar AprilTags
 	Mat imgray;
 	cv::cvtColor(cv_image, imgray, cv::COLOR_RGB2GRAY);
-	cv::imwrite("img.png",imgray);
+	float k=1.3;
 	vector<::AprilTags::TagDetection> detections = tagDetector->extractTags(imgray);
-	std::cout<<detections.size()<<std::endl;
+	//std::cout<<imgray.rows<<" "<<imgray.cols<<std::endl;
+	//std::cout<<detections.size()<<std::endl;
 	for(auto april: detections)
 	{
-		std::cout<<"Detectado april "<<april.id<<std::endl;
+		//std::cout<<"Detectado april "<<april.id<<std::endl;
+		//std::cout<<april.cxy.first<<"----"<<april.cxy.second<<std::endl;
+//		float x = mymap(april.cxy.first,0., 640., 0., -10.24*k/2);
+//		float y = mymap(april.cxy.second,0., 480., 0., 7.68*k/2);
+//		std::cout<<x<<"----"<<y<<std::endl;
 		if(april.id == 31)
 		{
-			luzroja->move(0, 0, 10);
+			luzroja->move(-10.24*k/2, 7.68*k/2, -100); //POSICION HARDCODEADA A MITAD DEL MAPA , probar valores "mapeados"
+//			luzroja->move(x, y, -100);			
 			luzroja->switchLuz(true);
 		}
 		else if(april.id == 30)
 		{
-			luzblanca->move(0, 0, 10);
+			luzblanca->move(-10.24*k/2, 7.68*k/2, -100);
+//luzroja->move(x, y, -100);
 			luzblanca->switchLuz(true);
 		}
 	}
