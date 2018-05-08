@@ -2,18 +2,17 @@
 
 #include "functions.h"
 
-
 void computepointcloud::addCube(boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer, float min_x, float max_x, float min_y, float max_y, float min_z, float max_z, std::string id)
 {
 
-	pcl::PointXYZ pt1 (min_x, min_y, min_z);
-	pcl::PointXYZ pt2 (min_x, min_y, max_z);
-	pcl::PointXYZ pt3 (max_x, min_y, max_z);
-	pcl::PointXYZ pt4 (max_x, min_y, min_z);
-	pcl::PointXYZ pt5 (min_x, max_y, min_z);
-	pcl::PointXYZ pt6 (min_x, max_y, max_z);
-	pcl::PointXYZ pt7 (max_x, max_y, max_z);
-	pcl::PointXYZ pt8 (max_x, max_y, min_z);
+	PointT pt1 (min_x, min_y, min_z);
+	PointT pt2 (min_x, min_y, max_z);
+	PointT pt3 (max_x, min_y, max_z);
+	PointT pt4 (max_x, min_y, min_z);
+	PointT pt5 (min_x, max_y, min_z);
+	PointT pt6 (min_x, max_y, max_z);
+	PointT pt7 (max_x, max_y, max_z);
+	PointT pt8 (max_x, max_y, min_z);
 
 	viewer->addLine (pt1, pt2, 1.0, 0.0, 0.0, "1" + id );
 	viewer->addLine (pt1, pt4, 1.0, 0.0, 0.0, "2" + id );
@@ -30,15 +29,15 @@ void computepointcloud::addCube(boost::shared_ptr<pcl::visualization::PCLVisuali
 
 }
 
-std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> euclideanClustering(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,int &numCluseters)
+std::vector<pcl::PointCloud<PointT>::Ptr> euclideanClustering(pcl::PointCloud<PointT>::Ptr cloud,int &numCluseters)
 {
 	std::vector<pcl::PointIndices> cluster_indices;
-	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> cluster_clouds;
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+	std::vector<pcl::PointCloud<PointT>::Ptr> cluster_clouds;
+	pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
 	tree->setInputCloud (cloud);
 	cluster_indices.clear();
 	cluster_clouds.clear();
-	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+	pcl::EuclideanClusterExtraction<PointT> ec;
 
 	ec.setClusterTolerance (0.02);
 	ec.setMinClusterSize (100);
@@ -50,7 +49,7 @@ std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> euclideanClustering(pcl::PointC
 	int j = 0;
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
 	{
-		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZ>);
+		pcl::PointCloud<PointT>::Ptr cloud_cluster (new pcl::PointCloud<PointT>);
 		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
 			cloud_cluster->points.push_back (cloud->points[*pit]); //*
 		cloud_cluster->width = cloud_cluster->points.size ();
@@ -66,12 +65,12 @@ std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> euclideanClustering(pcl::PointC
 	return cluster_clouds;
 }
 
-void computepointcloud::getBoundingBox(pcl::PointCloud< pcl::PointXYZ >::Ptr cloud, float &min_x, float &max_x, float &min_y, float &max_y, float &min_z, float &max_z)
+void computepointcloud::getBoundingBox(pcl::PointCloud< PointT >::Ptr cloud, float &min_x, float &max_x, float &min_y, float &max_y, float &min_z, float &max_z)
 {
-	pcl::PointXYZ min_point_AABB;
-	pcl::PointXYZ max_point_AABB;
+	PointT min_point_AABB;
+	PointT max_point_AABB;
 
-	pcl::MomentOfInertiaEstimation <pcl::PointXYZ> feature_extractor;
+	pcl::MomentOfInertiaEstimation <PointT> feature_extractor;
   feature_extractor.setInputCloud (cloud);
   feature_extractor.compute ();
   feature_extractor.getAABB (min_point_AABB, max_point_AABB);
@@ -84,18 +83,18 @@ void computepointcloud::getBoundingBox(pcl::PointCloud< pcl::PointXYZ >::Ptr clo
 	max_z = max_point_AABB.z;
 }
 
-pcl::PointCloud< pcl::PointXYZ >::Ptr computepointcloud::VoxelGrid_filter(pcl::PointCloud< pcl::PointXYZ >::Ptr cloud, float lx, float ly, float lz)
+pcl::PointCloud< PointT >::Ptr computepointcloud::VoxelGrid_filter(pcl::PointCloud< PointT >::Ptr cloud, float lx, float ly, float lz)
 {
-	pcl::VoxelGrid<pcl::PointXYZ> sor;
+	pcl::VoxelGrid<PointT> sor;
 	sor.setInputCloud (cloud);
 	sor.setLeafSize (lx, ly, lz);
 	sor.filter (*cloud);
 	return cloud;
 }
 
-pcl::PointCloud< pcl::PointXYZ >::Ptr computepointcloud::Filter_in_axis(pcl::PointCloud< pcl::PointXYZ >::Ptr cloud, string axi, float min, float max, bool negative)
+pcl::PointCloud< PointT >::Ptr computepointcloud::Filter_in_axis(pcl::PointCloud< PointT >::Ptr cloud, string axi, float min, float max, bool negative)
 {
-	pcl::PassThrough<pcl::PointXYZ> pass;
+	pcl::PassThrough<PointT> pass;
 	pass.setInputCloud (cloud);
 	pass.setFilterFieldName (axi);
 	pass.setFilterLimits (min, max);
@@ -104,9 +103,11 @@ pcl::PointCloud< pcl::PointXYZ >::Ptr computepointcloud::Filter_in_axis(pcl::Poi
 	return cloud;
 }
 
-pcl::PointCloud< pcl::PointXYZ >::Ptr computepointcloud::copy_pointcloud(pcl::PointCloud< pcl::PointXYZ >::Ptr cloud)
+pcl::PointCloud< PointT >::Ptr computepointcloud::copy_pointcloud(pcl::PointCloud< PointT >::Ptr cloud)
 {
-	pcl::PointCloud< pcl::PointXYZ >::Ptr copy_cloud(new pcl::PointCloud<pcl::PointXYZ>(*cloud));
+	pcl::PointCloud< PointT >::Ptr copy_cloud(new pcl::PointCloud<PointT>(*cloud));
 	return copy_cloud;
 }
+
+
 #endif

@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "luz.h"
+#include "functions.h"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include <AprilTags/TagDetector.h>
@@ -86,6 +87,9 @@ typedef struct point
 		return (abs(x-other.x) == 1 && abs(y-other.y) == 1);
 	};
 } point;
+
+
+
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -95,7 +99,7 @@ public:
 	~MainWindow();
 
 #ifdef READ_DATA_FROM_DEVICE
-	void computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud);
+	void computeRGBD(const pcl::PointCloud<PointT>::ConstPtr &cloud);
 	void computeImages(const boost::shared_ptr<pcl::io::openni2::Image> &);
 	void computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthImage>&);
 #else
@@ -122,7 +126,7 @@ private:
 
 	QTimer timerOSG;
 	Ui::MainWindow *ui;
-	pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud;
+	pcl::PointCloud< PointT >::Ptr cloud;
 	pcl::visualization::CloudViewer *viewer;
 	OsgView *osgw;
 	::AprilTags::TagDetector* tagDetector;

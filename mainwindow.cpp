@@ -117,7 +117,7 @@ void MainWindow::initCamera()
 			grabber = new pcl::io::OpenNI2Grabber();
 
 			// Register Callback Function
-			boost::function<void(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f = boost::bind(&MainWindow::computeRGBD, this, _1);
+			boost::function<void(const pcl::PointCloud<PointT>::ConstPtr&)> f = boost::bind(&MainWindow::computeRGBD, this, _1);
 			grabber->registerCallback(f);
 
 			boost::function<void(const boost::shared_ptr<pcl::io::openni2::Image> &)> f2 = boost::bind(&MainWindow::computeImages, this, _1);
@@ -197,11 +197,11 @@ void MainWindow::computeOSG()
 }
 
 #ifdef READ_DATA_FROM_DEVICE
-void MainWindow::computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud_l)
+void MainWindow::computeRGBD(const pcl::PointCloud<PointT>::ConstPtr &cloud_l)
 {
 	static uint32_t count = 0;
 	if (cloud == NULL)
-		cloud = pcl::PointCloud< pcl::PointXYZRGBA >::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>(*cloud_l));
+		cloud = pcl::PointCloud< PointT >::Ptr(new pcl::PointCloud<PointT>(*cloud_l));
 	*cloud = *cloud_l;
 	viewer->showCloud(cloud_l);
 }
@@ -234,11 +234,11 @@ void MainWindow::computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthI
 void MainWindow::readPCD()
 {
 	if (cloud == NULL)
-		cloud = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
+		cloud = pcl::PointCloud<PointT>::Ptr(new pcl::PointCloud<PointT>);
 	if (osgImage == NULL)
 		return;
 
-	if (pcl::io::loadPCDFile<pcl::PointXYZRGBA> (std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".pcd"), *cloud) == -1)
+	if (pcl::io::loadPCDFile<PointT> (std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".pcd"), *cloud) == -1)
 	{
 		PCL_ERROR ("Couldn't read file pcd: %s\n", (std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".pcd").c_str()));
 		exit(1);
@@ -271,6 +271,7 @@ void MainWindow::button_slot()
 	readPCD();
 	readDepth();
 #endif
+	
 }
 
 void MainWindow::processTags()

@@ -4,7 +4,7 @@ project(practica2)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 ADD_DEFINITIONS( -Wall -DQT_DLL -DQT_GUI_LIB -DQT_CORE_LIB )
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11")
-set(SOURCES main.cpp mainwindow.cpp osgview.cpp luz.cpp )
+set(SOURCES main.cpp mainwindow.cpp osgview.cpp luz.cpp functions.cpp )
 
 set(CMAKE_CXX_STANDARD 14)
 
