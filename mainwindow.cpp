@@ -49,12 +49,6 @@ rgb_color MainWindow::ucharize(float v)
 }
 
 
-pcl::PointCloud< pcl::PointXYZRGBA >::Ptr copy_pointcloud(pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud)
-{
-	pcl::PointCloud< pcl::PointXYZRGBA >::Ptr copy_cloud(new pcl::PointCloud<pcl::PointXYZRGBA>(*cloud));
-	return copy_cloud;
-}
-
 std::map<float,rgb_color> loadPaleta()
 {
 	std::string k,r,g,b;
@@ -296,7 +290,7 @@ void MainWindow::processTags()
 		std::cout<<"Detectado april "<<april.id<<std::endl;
 		if(april.id == 31)
 		{
-			luzroja->move(0, 0, 10);
+			luzroja->move(0, 0, 10º);
 			luzroja->switchLuz(true);
 		}
 		else if(april.id == 30)
