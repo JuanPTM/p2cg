@@ -15,8 +15,8 @@
 #include <string>
 #include <stdlib.h>
 #include <math.h>
-#include "luz.h"
-#include "functions.h"
+#include "Luz/luz.h"
+#include "computepointcloud/computepointcloud.h"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include <AprilTags/TagDetector.h>
@@ -31,6 +31,7 @@
 	#include <opencv2/highgui/highgui.hpp>
 	#include <opencv2/features2d/features2d.hpp>
 	#include <opencv2/calib3d/calib3d.hpp>
+	#include "viewer/viewer.h"
 	#include <pcl/visualization/cloud_viewer.h>
 	#include <pcl/io/pcd_io.h>
 #endif
@@ -42,6 +43,7 @@
 
 #include <osgview.h>
 using namespace cv;
+using namespace computepointcloud;
 
 namespace Ui
 {
@@ -69,14 +71,22 @@ typedef struct point
 {
 	int x;
 	int y;
+	int level;
 	public:
 	point(){
 		x=0;
 		y=0;
+		level = -1;
 	}
 	point(int x_, int y_){
 		x=x_;
 		y=y_;
+		level = -1;
+	};
+	point(int x_, int y_, int level_){
+		x=x_;
+		y=y_;
+		level = level_;
 	};
 	bool operator==(const point& other) const
   {
@@ -85,6 +95,14 @@ typedef struct point
 	bool adjacent(const point& other) const
 	{
 		return (abs(x-other.x) == 1 && abs(y-other.y) == 1);
+	};
+	void setLevel(int level_)
+	{
+		level=level_;
+	};
+	int getLevel()
+	{
+		return level;
 	};
 } point;
 
@@ -99,7 +117,7 @@ public:
 	~MainWindow();
 
 #ifdef READ_DATA_FROM_DEVICE
-	void computeRGBD(const pcl::PointCloud<PointT>::ConstPtr &cloud);
+	void computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud);
 	void computeImages(const boost::shared_ptr<pcl::io::openni2::Image> &);
 	void computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthImage>&);
 #else
@@ -120,14 +138,15 @@ private slots:
 private:
 	std::map<float,rgb_color> paleta;
 	std::vector<std::vector<point>>pointsByLevel;
-	void searchWay(point src, int srcLevel, point dst, int dstLevel);
+	void searchWay(point src, point dst);
 	void processTags();
 	rgb_color ucharize(float v);
 
 	QTimer timerOSG;
 	Ui::MainWindow *ui;
-	pcl::PointCloud< PointT >::Ptr cloud;
-	pcl::visualization::CloudViewer *viewer;
+	pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud;
+	// pcl::visualization::CloudViewer *viewer;
+	Viewer *viewer;
 	OsgView *osgw;
 	::AprilTags::TagDetector* tagDetector;
 

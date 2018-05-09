@@ -86,8 +86,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	init3D();
 
 	cloud = NULL;
-
-	viewer = new pcl::visualization::CloudViewer("cloud");
+	viewer = new Viewer();
+	// std::thread update (viewer->update);
+	// viewer = new pcl::visualization::CloudViewer("cloud");
 
 	connect(&timerOSG, SIGNAL(timeout()), this, SLOT(computeOSG()));
 	timerOSG.start(2);
@@ -117,7 +118,7 @@ void MainWindow::initCamera()
 			grabber = new pcl::io::OpenNI2Grabber();
 
 			// Register Callback Function
-			boost::function<void(const pcl::PointCloud<PointT>::ConstPtr&)> f = boost::bind(&MainWindow::computeRGBD, this, _1);
+			boost::function<void(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f = boost::bind(&MainWindow::computeRGBD, this, _1);
 			grabber->registerCallback(f);
 
 			boost::function<void(const boost::shared_ptr<pcl::io::openni2::Image> &)> f2 = boost::bind(&MainWindow::computeImages, this, _1);
@@ -194,16 +195,19 @@ void MainWindow::computeOSG()
 	bStateSetIMAGEN->setTextureAttributeAndModes(0, osgTexture, osg::StateAttribute::ON);
 	osgw->frame();
 	processTags();
+	viewer->update();
 }
 
 #ifdef READ_DATA_FROM_DEVICE
-void MainWindow::computeRGBD(const pcl::PointCloud<PointT>::ConstPtr &cloud_l)
+void MainWindow::computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud_l)
 {
 	static uint32_t count = 0;
 	if (cloud == NULL)
-		cloud = pcl::PointCloud< PointT >::Ptr(new pcl::PointCloud<PointT>(*cloud_l));
+		cloud = pcl::PointCloud< pcl::PointXYZRGBA >::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>(*cloud_l));
 	*cloud = *cloud_l;
-	viewer->showCloud(cloud_l);
+	viewer->addPointCloud(cloud, "cloud", 0, 0, 0);
+	// viewer->update();
+	// viewer->showCloud(cloud_l);
 }
 
 void MainWindow::computeImages(const boost::shared_ptr<pcl::io::openni2::Image> &o_image)
@@ -234,16 +238,17 @@ void MainWindow::computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthI
 void MainWindow::readPCD()
 {
 	if (cloud == NULL)
-		cloud = pcl::PointCloud<PointT>::Ptr(new pcl::PointCloud<PointT>);
+		cloud = pcl::PointCloud<pcl::PointXYZRGBA>::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>);
 	if (osgImage == NULL)
 		return;
 
-	if (pcl::io::loadPCDFile<PointT> (std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".pcd"), *cloud) == -1)
+	if (pcl::io::loadPCDFile<pcl::PointXYZRGBA> (std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".pcd"), *cloud) == -1)
 	{
 		PCL_ERROR ("Couldn't read file pcd: %s\n", (std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".pcd").c_str()));
 		exit(1);
 	}
-	viewer->showCloud(cloud);
+	viewer->addPointCloud(cloud, "cloud", 0, 0, 0);
+	// viewer->showCloud(cloud);
 
 }
 
@@ -271,7 +276,23 @@ void MainWindow::button_slot()
 	readPCD();
 	readDepth();
 #endif
-	
+	std::vector< int > index;
+	removeNaNFromPointCloud(*cloud, *cloud, index);
+	int n;
+	std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds = euclideanClustering(cloud,n);
+	int i=0;
+	viewer->removeAllShapes();
+	for(auto obj_scene:cluster_clouds)
+	{
+		i++;
+		// pcl::PointCloud<pcl::PointXYZ>::Ptr *Obj = new ObjectType;
+		// objectspointer.push_back(Obj);
+		std::cout<<obj_scene->points.size()<<std::endl;
+		// getBoundingBox(obj_scene,min_x, max_x, min_y, max_y, min_z, max_z);
+		viewer->drawBoundingBox(obj_scene, std::to_string(i));
+
+		// addCube(viewer, min_x, max_x, min_y, max_y, min_z, max_z, std::to_string(i));
+	}
 }
 
 void MainWindow::processTags()
@@ -291,23 +312,24 @@ void MainWindow::processTags()
 	{
 		//std::cout<<"Detectado april "<<april.id<<std::endl;
 		//std::cout<<april.cxy.first<<"----"<<april.cxy.second<<std::endl;
-//		float x = mymap(april.cxy.first,0., 640., 0., -10.24*k/2);
-//		float y = mymap(april.cxy.second,0., 480., 0., 7.68*k/2);
-//		std::cout<<x<<"----"<<y<<std::endl;
+		// float x = mymap(april.cxy.first,0., 640., 0., -10.24*k/2);
+		// float y = mymap(april.cxy.second,0., 480., 0., 7.68*k/2);
+		// std::cout<<x<<"----"<<y<<std::endl;
 		if(april.id == 31)
 		{
 			luzroja->move(-10.24*k/2, 7.68*k/2, -100); //POSICION HARDCODEADA A MITAD DEL MAPA , probar valores "mapeados"
-//			luzroja->move(x, y, -100);
+			// luzroja->move(x, y, -100);
 			luzroja->switchLuz(true);
 		}
 		else if(april.id == 30)
 		{
 			luzblanca->move(-10.24*k/2, 7.68*k/2, -100);
-//luzroja->move(x, y, -100);
+			// luzblanca->move(x, y, -100);
 			luzblanca->switchLuz(true);
 		}
 	}
 }
+
 Mat FILTER(Mat input)
 {
 	for (int r=0; r<480; r++)
@@ -323,13 +345,30 @@ Mat FILTER(Mat input)
 	return input;
 }
 
-void MainWindow::searchWay(point src, int srcLevel, point dst, int dstLevel)
+void MainWindow::searchWay(point src, point dst)
 {
+	std::cout << __FUNCTION__ << '\n';
 	std::vector<point> pointsToWay;
-	for(int i = srcLevel; i<=dstLevel; i++)
-		pointsToWay.insert(pointsToWay.begin(),pointsByLevel[i].begin(), pointsByLevel[i].end());
+	for(int i = src.getLevel(); i<=dst.getLevel(); i++)
+	{
+		pointsToWay.insert(pointsToWay.begin(), pointsByLevel[i].begin(), pointsByLevel[i].end());
+	}
+	Mat imgWay = cv::Mat::zeros(480, 640, CV_8U);
+	Mat outimg = cv::Mat::zeros(480, 640, CV_8U);;
+	for(auto point : pointsToWay)
+	{
+		imgWay.at<uchar>(point.x,point.y)=255;
+	}
+	vector<vector<Point> > contours;
+	vector<Vec4i> hierarchy;
+	findContours( imgWay, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
-
+	for( unsigned int i = 0; i< contours.size(); i++ )
+	{
+		drawContours( outimg, contours, i, 255, 1, 8, hierarchy, 0, Point() );
+	}
+	line(outimg, Point( src.y, src.x), Point(dst.y,dst.x),255);
+	imshow("outimg", outimg);
 }
 
 void MainWindow::drawColors()
@@ -356,9 +395,7 @@ void MainWindow::drawColors()
 			float v = bf[idx];
 
 			if (std::isnan(v)){
-				bb[idx*3 + 0] = (uint8_t)0;
-				bb[idx*3 + 1] = (uint8_t)0;
-				bb[idx*3 + 2] = (uint8_t)0;
+				bb[idx*3 + 0] = bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
 				continue;
 			}
 			if (v>maxP)
@@ -380,13 +417,17 @@ void MainWindow::drawColors()
 				v -= minV;
 				v /= maxV-minV;
 				v = normalizeFloat(v*255);
+				if ( r == 100 && c == 200)
+					std::cout<< r << " " << c << " " << v <<std::endl;
+				else if( r == 300 && c == 500)
+					std::cout<< r << " " << c << " " << v <<std::endl;
 				if((int)v%10 == 0)
 				{
 					mask.at<uchar>((int)r,(int)c) = 255;
 					// return rgb_color(0,0,0);
 				}
 				int level = ceil(v/10);
-				pointsByLevel.at(level-1).push_back(point((int)r,(int)c));
+				pointsByLevel.at(level-1).push_back(point((int)r,(int)c,level-1));
 				rgb_color c = ucharize(v);
 				bb[idx*3 + 0] = (uint8_t)c.r;
 				bb[idx*3 + 1] = (uint8_t)c.g;
@@ -410,4 +451,6 @@ void MainWindow::drawColors()
 				}
 		}
 	}
+
+	searchWay(point(100, 200, ceil(115.114/10)), point(300, 500, ceil(116.571/10)));
 }
