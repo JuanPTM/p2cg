@@ -390,35 +390,71 @@ std::vector<std::vector<bool>> getAdjacencyMatrix(const std::vector<point> point
 	return adj;
 }
 
-vector<int> dijk(int A, int B, vector< vector<bool> > adj)
+vector< int > dijk2(int A, int B, const std::vector<point> points)
 {
 	std::cout << __FUNCTION__ << '\n';
-	int n = adj.size();
-  vector<unsigned long> dist(n,1 << 30);
-  vector<bool> vis(n,false);
-	std::vector<std::vector<int>> result(n,std::vector<int>());
+	int n = points.size();
+  vector< unsigned long > dist(n, 1 << 30);
+  vector< bool > vis(n, false);
+	std::vector< std::vector< int > > result(n, std::vector<int>());
 
   dist[A] = 0;
 	result[A].push_back(A);
+	int j, i;
+	unsigned long path;
 
-  for(int i = 0; i < n; ++i)
+  for( i = 0; i < n; ++i)
 	{
-    // int cur = -1;
-    // for(int j = 0; j < n; ++j)
-		// {
-    //   if (vis[j]) continue;
-    //   if (cur == -1 || dist[j] < dist[cur])
-		// 	{
-    //     cur = j;
-    //   }
-    // }
-
-    vis[i] = true;
+		int cur = -1;
     for(int j = 0; j < n; ++j)
 		{
-			unsigned long path = dist[i];
+      if (vis[j]) continue;
+      if (cur == -1 || dist[j] < dist[cur])
+        cur = j;
+    }
+    vis[cur] = true;
+    for(j = 0; j < n; ++j)
+		{
+			path = dist[cur];
+			if (points.at(cur).adjacent(points.at(j)))
+      	path += 1;
+			else
+				path += 1 << 30;
+      if (path < dist[j])
+			{
+        dist[j] = path;
+				result[j].clear();
+				result[j].insert(result[j].begin(), result[cur].begin(),result[cur].end());
+				result[j].push_back(j);
+      }
+    }
+  }
+  return result[B];
+}
+
+vector< int > dijk(int A, int B, const vector< vector< bool > > adj)
+{
+	std::cout << __FUNCTION__ << '\n';
+	int n = adj.size();
+  vector< unsigned long > dist(n,1 << 30);
+  vector< bool > vis(n,false);
+	std::vector< std::vector< int > > result(n,std::vector<int>());
+
+  dist[A] = 0;
+	result[A].push_back(A);
+	int j, i;
+	unsigned long path;
+
+  for( i = 0; i < n; ++i)
+	{
+    vis[i] = true;
+    for(j = 0; j < n; ++j)
+		{
+			path = dist[i];
 			if (adj[i][j])
-      	path = dist[i] + 1;
+      	path += 1;
+			else
+				path += 1 << 30;
       if (path < dist[j])
 			{
         dist[j] = path;
@@ -437,23 +473,25 @@ void MainWindow::searchWay(point src, point dst)
 	std::vector<point> pointsToWay;
 	vector<int> dist;
 	long dstIndex,srcIndex;
+	int min = std::min(src.getLevel(),dst.getLevel());
+	int max = std::max(src.getLevel(),dst.getLevel());
 	do {
 		std::cout << "Subiendo nivel" << '\n';
 		pointsToWay.clear();
-		int min = std::min(src.getLevel(),dst.getLevel());
-		int max = std::max(src.getLevel(),dst.getLevel());
 		for(int i = min; i<=max; i++)
 			pointsToWay.insert(pointsToWay.begin(), pointsByLevel[i].begin(), pointsByLevel[i].end());
 		if(min>0)
 		 	min--;
 		if(max<ceil(255/10))
 		 	max++;
-		srcIndex = std::distance(pointsToWay.begin(),std::find(pointsToWay.begin(),pointsToWay.end(),src));
-		dstIndex = std::distance(pointsToWay.begin(),std::find(pointsToWay.begin(),pointsToWay.end(),dst));
-	 	std::vector<std::vector<bool>> adj = getAdjacencyMatrix(pointsToWay);
-	 	dist = dijk( srcIndex, dstIndex, adj);
+
+		srcIndex = std::distance(pointsToWay.begin(), std::find(pointsToWay.begin(), pointsToWay.end(), src));
+		dstIndex = std::distance(pointsToWay.begin(), std::find(pointsToWay.begin(), pointsToWay.end(), dst));
+	 	// std::vector<std::vector<bool>> adj = getAdjacencyMatrix(pointsToWay);
+	 	// dist = dijk( srcIndex, dstIndex, adj);
+		dist = dijk2(srcIndex, dstIndex, pointsToWay);
 		std::cout << dist.back() << dstIndex << '\n';
-	} while(dist.back() != dstIndex); // TODO problema porque siempre es igual incluso cuando no encuentra camino.
+	} while(dist.empty() || dist.back() != dstIndex); // TODO problema porque siempre es igual incluso cuando no encuentra camino.
 	std::cout << "pointsToWay = "<<pointsToWay.size() << '\n';
 	std::cout << "dist = "<<dist.size() << '\n';
 
@@ -514,7 +552,7 @@ void MainWindow::drawColors()
 				// 	src = p;
 				// else if( r == 400 && c == 620)
 				// 	dst = p;
-				if ( r == 100 && c == 200)
+				if ( r == 50 && c == 150)
 					src = p;
 				else if( r == 300 && c == 500)
 					dst = p;
