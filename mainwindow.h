@@ -40,7 +40,7 @@
 #include <QtCore>
 
 #include <QGraphicsPixmapItem>
-
+#include <osg/Texture3D>
 #include <osgview.h>
 using namespace cv;
 using namespace computepointcloud;
@@ -92,6 +92,11 @@ typedef struct point
   {
 		return (x==other.x && y==other.y);
 	};
+	friend ostream& operator<<(ostream& os, const point& p)
+	{
+    os << "point("<< p.x << ", " << p.y << ", " << p.level<<")";
+    return os;
+	}
 	bool adjacent(const point& other) const
 	{
 		return (abs(x-other.x) == 1 && abs(y-other.y) == 1);
@@ -159,6 +164,7 @@ private:
 	float *bf;
 	uint8_t *bb;
 	osg::Image *osgImage;
+	osg::ref_ptr<osg::Geometry> geom;
 	osg::Texture *osgTexture;
 	osg::StateSet *bStateSetIMAGEN;
 	Luz *luzblanca, *luzroja;
