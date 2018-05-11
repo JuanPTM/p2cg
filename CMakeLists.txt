@@ -45,7 +45,7 @@ MESSAGE(STATUS ${OpenCV_LIBS})
 # OpenSceneGraph
 #
 INCLUDE_DIRECTORIES( /usr/local/include/osg /usr/include/osgViewer )
-SET(LIBS ${OSG_LIBS} -L/usr/local/lib64/ -losg -losgViewer -losgGA -losgText -losgDB -losgUtil )
+SET(LIBS ${OSG_LIBS} -L/usr/local/lib64/ -losg -losgViewer -losgGA -losgText -losgDB -losgUtil -fopenmp)
 
 
 #
@@ -56,6 +56,7 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 # ADD_DEFINITIONS( -std=c++11 )
+ADD_DEFINITIONS( -fopenmp)
 
 #
 # Link

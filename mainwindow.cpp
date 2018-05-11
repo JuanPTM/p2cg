@@ -71,8 +71,10 @@ std::map<float,rgb_color> loadPaleta()
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
-	for(int i = 0; i <= ceil(255/10); i++)
-		pointsByLevel.push_back(std::vector<point>());
+	std::cout << ceil(255/10.)+1 << '\n';
+	pointsByLevel = std::vector<std::vector<point>>(ceil(255/10.)+1,std::vector<point>());
+	std::cout << pointsByLevel.size() << '\n';
+
 	setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 	ui->setupUi(this);
 	show();
@@ -374,134 +376,127 @@ Mat FILTER(Mat input)
 	return input;
 }
 
-std::vector<std::vector<bool>> getAdjacencyMatrix(const std::vector<point> points)
-{
-	std::cout << __FUNCTION__ << '\n';
-	std::vector<std::vector<bool>> adj(points.size(), vector<bool>(points.size(),  false));
-	for(unsigned int i = 0; i<points.size(); i++)
-		for(unsigned int j = i; j<points.size(); j++)
-		{
-			if(points.at(i).adjacent(points.at(j)))
-			{
-				adj.at(i).at(j) = true;
-				adj.at(j).at(i) = true;
-			}
-		}
-	return adj;
-}
-
-vector< int > dijk2(int A, int B, const std::vector<point> points)
+vector< int > dijk2(int A, int B, const std::vector<point> points, int value)
 {
 	std::cout << __FUNCTION__ << '\n';
 	int n = points.size();
-  vector< unsigned long > dist(n, 1 << 30);
+  vector< unsigned long > dist(n, 0xffffffff);
   vector< bool > vis(n, false);
 	std::vector< std::vector< int > > result(n, std::vector<int>());
-
-  dist[A] = 0;
-	result[A].push_back(A);
-	int j, i;
+  dist.at(A) = 0;
+	result.at(A).push_back(A);
+	int j, i, cur;
 	unsigned long path;
-
-  for( i = 0; i < n; ++i)
-	{
-		int cur = -1;
-    for(int j = 0; j < n; ++j)
+	point curP;
+		for( i = 0; i < n; ++i)
 		{
-      if (vis[j]) continue;
-      if (cur == -1 || dist[j] < dist[cur])
-        cur = j;
-    }
-    vis[cur] = true;
-    for(j = 0; j < n; ++j)
-		{
-			path = dist[cur];
-			if (points.at(cur).adjacent(points.at(j)))
-      	path += 1;
-			else
-				path += 1 << 30;
-      if (path < dist[j])
+				cur = -1;
+				for(j = 0; j < n; ++j)
+				{
+					if (vis[j]) continue;
+					if (cur == -1 || dist[j] < dist[cur])
+						cur = j;
+				}
+				vis[cur] = true;
+				curP = points.at(cur);
+			for(j = 0; j < n; ++j)
 			{
-        dist[j] = path;
-				result[j].clear();
-				result[j].insert(result[j].begin(), result[cur].begin(),result[cur].end());
-				result[j].push_back(j);
-      }
-    }
-  }
-  return result[B];
+				if(j == cur) continue;
+				if(curP.adjacent(points.at(j), value))
+				{
+					path = dist.at(cur)+ curP.adjacentDistance(points.at(j), value);
+					if (path < dist.at(j))
+					{
+						dist.at(j) = path;
+						result.at(j).clear();
+						result.at(j).insert(result.at(j).begin(), result.at(cur).begin(),result.at(cur).end());
+						result.at(j).push_back(j);
+					}
+				}
+			}
+		}
+	std::cout << __FUNCTION__ << " end" << '\n';
+	return result[B];
 }
 
-vector< int > dijk(int A, int B, const vector< vector< bool > > adj)
+std::vector<point> reduceListPoints(std::vector<point> pointsToWay, int value)
 {
-	std::cout << __FUNCTION__ << '\n';
-	int n = adj.size();
-  vector< unsigned long > dist(n,1 << 30);
-  vector< bool > vis(n,false);
-	std::vector< std::vector< int > > result(n,std::vector<int>());
-
-  dist[A] = 0;
-	result[A].push_back(A);
-	int j, i;
-	unsigned long path;
-
-  for( i = 0; i < n; ++i)
-	{
-    vis[i] = true;
-    for(j = 0; j < n; ++j)
-		{
-			path = dist[i];
-			if (adj[i][j])
-      	path += 1;
-			else
-				path += 1 << 30;
-      if (path < dist[j])
-			{
-        dist[j] = path;
-				result[j].clear();
-				result[j].insert(result[j].begin(), result[i].begin(),result[i].end());
-				result[j].push_back(j);
-      }
-    }
-  }
-  return result[B];
+	std::vector<point> out;
+	for(auto const p:pointsToWay)
+		if(p.x%value==0 && p.y%value ==0)
+			out.push_back(p);
+	return out;
 }
 
 void MainWindow::searchWay(point src, point dst)
 {
 	std::cout << __FUNCTION__ << '\n';
 	std::vector<point> pointsToWay;
-	vector<int> dist;
+	vector<int> way;
 	long dstIndex,srcIndex;
+	std::cout << src.getLevel()<<" " << dst.getLevel() << '\n';
 	int min = std::min(src.getLevel(),dst.getLevel());
 	int max = std::max(src.getLevel(),dst.getLevel());
+	int value = 4;
 	do {
-		std::cout << "Subiendo nivel" << '\n';
+		std::cout << "Subiendo nivel niveles del " << min << " al " << max << '\n';
 		pointsToWay.clear();
 		for(int i = min; i<=max; i++)
 			pointsToWay.insert(pointsToWay.begin(), pointsByLevel[i].begin(), pointsByLevel[i].end());
+		std::cout << pointsToWay.size() << '\n';
+		pointsToWay = reduceListPoints(pointsToWay,value);
+		std::cout << pointsToWay.size() << '\n';
+		if(src.x%value!=0 || src.y%value!=0)
+			pointsToWay.push_back(src);
+		if(dst.x%value!=0 || dst.y%value !=0)
+			pointsToWay.push_back(dst);
 		if(min>0)
 		 	min--;
-		if(max<ceil(255/10))
+		if(max<ceil(255./10)-1)
 		 	max++;
 
 		srcIndex = std::distance(pointsToWay.begin(), std::find(pointsToWay.begin(), pointsToWay.end(), src));
 		dstIndex = std::distance(pointsToWay.begin(), std::find(pointsToWay.begin(), pointsToWay.end(), dst));
-	 	// std::vector<std::vector<bool>> adj = getAdjacencyMatrix(pointsToWay);
-	 	// dist = dijk( srcIndex, dstIndex, adj);
-		dist = dijk2(srcIndex, dstIndex, pointsToWay);
-		std::cout << dist.back() << dstIndex << '\n';
-	} while(dist.empty() || dist.back() != dstIndex); // TODO problema porque siempre es igual incluso cuando no encuentra camino.
-	std::cout << "pointsToWay = "<<pointsToWay.size() << '\n';
-	std::cout << "dist = "<<dist.size() << '\n';
 
-	for(auto const &i:dist)
+		way = dijk2(srcIndex, dstIndex, pointsToWay,value);
+		std::cout << "Sali de dijkstra" << '\n';
+	} while(way.empty() || way.back() != dstIndex || way.front() != srcIndex);
+	std::cout << "pointsToWay = "<<pointsToWay.size() << '\n';
+	std::cout << "way = "<<way.size() << '\n';
+
+	for(auto const &i:way)
 	{
-		int idx = pointsToWay[i].x*640+pointsToWay[i].y;
-		bb[idx*3 + 0] = 0;
-		bb[idx*3 + 1] = 0;
-		bb[idx*3 + 2] = 255;
+		int curX = pointsToWay[i].x;
+		int curY = pointsToWay[i].y;
+		for (int x =curX-value/2; x<curX+value/2; x++)
+			for (int y =curY-value/2; y<curY+value/2; y++)
+			{
+				if(x<0 || 480<=x || y<0 || 640<=y) continue;
+				int idx = x*640+y;
+				bb[idx*3 + 0] = bb[idx*3 + 1] = 0;
+				bb[idx*3 + 2] = 255;
+			}
 	}
+	int curX = src.x;
+	int curY = src.y;
+	for (int x =curX-value/2; x<curX+value/2; x++)
+		for (int y =curY-value/2; y<curY+value/2; y++)
+		{
+			if(x<0 || 480<=x || y<0 || 640<=y) continue;
+			int idx = x*640+y;
+			bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
+			bb[idx*3 + 0] = 255;
+		}
+	curX = dst.x;
+	curY = dst.y;
+	for (int x =curX-value/2; x<curX+value/2; x++)
+		for (int y =curY-value/2; y<curY+value/2; y++)
+		{
+			if(x<0 || 480<=x || y<0 || 640<=y) continue;
+			int idx = x*640+y;
+			bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
+			bb[idx*3 + 0] = 255;
+		}
 }
 
 void MainWindow::drawColors()
@@ -545,18 +540,19 @@ void MainWindow::drawColors()
 				{
 					mask.at<uchar>((int)r,(int)c) = 255;
 				}
-				int level = ceil(v/10);
-
-				point p = point((int)r,(int)c,level-1);
-				// if ( r == 400 && c == 20)
-				// 	src = p;
-				// else if( r == 400 && c == 620)
-				// 	dst = p;
-				if ( r == 50 && c == 150)
+				int level = ceil(v/10.);
+				point p = point((int)r,(int)c,level);
+				if (level == 16)
+					std::cout <<level << " "<< r<<" "<<c << '\n';
+				if ( r == 410 && c == 54)
 					src = p;
-				else if( r == 300 && c == 500)
+				else if( r == 409 && c == 586)
 					dst = p;
-				pointsByLevel.at(level-1).push_back(p);
+				// if ( r == 50 && c == 150)
+				// 	src = p;
+				// else if( r == 300 && c == 500)
+				// 	dst = p;
+				pointsByLevel.at(level).push_back(p);
 				rgb_color c = ucharize(v);
 				bb[idx*3 + 0] = (uint8_t)c.r;
 				bb[idx*3 + 1] = (uint8_t)c.g;

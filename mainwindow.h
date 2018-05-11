@@ -97,9 +97,16 @@ typedef struct point
     os << "point("<< p.x << ", " << p.y << ", " << p.level<<")";
     return os;
 	}
-	bool adjacent(const point& other) const
+	unsigned int adjacentDistance(const point& other,int value) const
 	{
-		return (abs(x-other.x) <= 1 && abs(y-other.y) <= 1);
+		if (abs(x-other.x) <= value && abs(y-other.y) <= value)
+			return ceil(sqrt(pow(abs(x-other.x),2) + pow(abs(y-other.y),2) ));
+		else
+			return 0xffffffff;
+	};
+	bool adjacent(const point& other,int value) const
+	{
+		return (abs(x-other.x) <= value && abs(y-other.y) <= value);
 	};
 	void setLevel(int level_)
 	{
