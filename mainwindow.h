@@ -99,7 +99,7 @@ typedef struct point
 	}
 	bool adjacent(const point& other) const
 	{
-		return (abs(x-other.x) == 1 && abs(y-other.y) == 1);
+		return (abs(x-other.x) <= 1 && abs(y-other.y) <= 1);
 	};
 	void setLevel(int level_)
 	{
