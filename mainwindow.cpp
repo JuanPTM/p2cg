@@ -71,7 +71,6 @@ std::map<float,rgb_color> loadPaleta()
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
 	pointsByLevel = std::vector<std::vector<point>>(ceil(255/10.)+1,std::vector<point>());
-
 	setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 	ui->setupUi(this);
 	show();
@@ -181,6 +180,11 @@ void MainWindow::init3D()
 	bStateSetIMAGEN->setTextureMode(0, GL_TEXTURE_GEN_R, osg::StateAttribute::ON);
 	luzblanca = new Luz(osgw, 0, osg::Vec4(0.0,0.0,0.0,1.0), osg::Vec4(1.0,1.0,1.0,1.0), osg::Vec4(1.0,1.0,1.0,1.0), osg::Vec4(0,0,0,1.0));
 	luzroja = new Luz(osgw, 1, osg::Vec4(0.0,0.0,0.0,1.0), osg::Vec4(1.0,0.,0.,1.0), osg::Vec4(1.0,0.,0.,1.0), osg::Vec4(0,0,0,1.0));
+
+
+
+	osgway = new osgWay(osgw);
+
 }
 
 
@@ -198,6 +202,7 @@ void MainWindow::computeOSG()
 	osgw->frame();
 	processTags();
 	viewer->update();
+	osgway->update();
 }
 
 #ifdef READ_DATA_FROM_DEVICE
@@ -321,7 +326,7 @@ void MainWindow::processTags()
 	luzroja->switchLuz(false);
 	float k=1.3;
 	luzblanca->move(-10.24*k/2, 7.68*k/2, -100);
-	luzblanca->switchLuz(true);
+	luzblanca->switchLuz(false);
   	//Procesar AprilTags
 	Mat imgray;
 	cv::cvtColor(cv_image, imgray, cv::COLOR_RGB2GRAY);
@@ -559,4 +564,5 @@ void MainWindow::drawColors()
 	}
 	// animar camino
 	auto way = searchWay(src, dst);
+	osgway->setWay(way);
 }

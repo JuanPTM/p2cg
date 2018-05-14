@@ -9,7 +9,8 @@ set(SOURCES main.cpp
             mainwindow.cpp
             osgview.cpp
             Luz/luz.cpp
-            viewer/viewer.cpp )
+            viewer/viewer.cpp
+            osgWay/osgWay.cpp )
 
 set(CMAKE_CXX_STANDARD 14)
 
