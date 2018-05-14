@@ -326,25 +326,19 @@ void MainWindow::processTags()
 	Mat imgray;
 	cv::cvtColor(cv_image, imgray, cv::COLOR_RGB2GRAY);
 	vector<::AprilTags::TagDetection> detections = tagDetector->extractTags(imgray);
-	//std::cout<<imgray.rows<<" "<<imgray.cols<<std::endl;
-	//std::cout<<detections.size()<<std::endl;
+
 	for(auto april: detections)
 	{
-		//std::cout<<"Detectado april "<<april.id<<std::endl;
-		//std::cout<<april.cxy.first<<"----"<<april.cxy.second<<std::endl;
-		// float x = mymap(april.cxy.first,0., 640., 0., -10.24*k/2);
-		// float y = mymap(april.cxy.second,0., 480., 0., 7.68*k/2);
-		// std::cout<<x<<"----"<<y<<std::endl;
+		int x = april.cxy.first;
+		int y = april.cxy.second;
 		if(april.id == 31)
 		{
-			luzroja->move(-10.24*k/2, 7.68*k/2, -100); //POSICION HARDCODEADA A MITAD DEL MAPA , probar valores "mapeados"
-			// luzroja->move(x, y, -100);
+			luzroja->move(x*k/100, y*k/100, -100);
 			luzroja->switchLuz(true);
 		}
 		else if(april.id == 30)
 		{
-			luzblanca->move(-10.24*k/2, 7.68*k/2, -100);
-			// luzblanca->move(x, y, -100);
+			luzblanca->move(x*k/100, y*k/100, -100);
 			luzblanca->switchLuz(true);
 		}
 	}
