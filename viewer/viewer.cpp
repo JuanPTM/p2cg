@@ -12,7 +12,7 @@ Viewer::Viewer():pcl::visualization::PCLVisualizer ("3D Viewer")
 
 void Viewer::addCoordinateSystem(float x,float y, float z, std::string id)
 {
-	pcl::visualization::PCLVisualizer::addCoordinateSystem(0.5,x,y,z,id,0);
+	pcl::visualization::PCLVisualizer::addCoordinateSystem(0.5,x,y,z,id+"CoordinateSystem",0);
 }
 
 void Viewer::addPointCloud(pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud, std::string id, int r, int g, int b )

@@ -15,6 +15,7 @@
 #include <string>
 #include <stdlib.h>
 #include <math.h>
+#include <limits>
 #include "Luz/luz.h"
 #include "computepointcloud/computepointcloud.h"
 #include "opencv2/highgui/highgui.hpp"
@@ -97,12 +98,12 @@ typedef struct point
     os << "point("<< p.x << ", " << p.y << ", " << p.level<<")";
     return os;
 	}
-	unsigned int adjacentDistance(const point& other,int value) const
+	float adjacentDistance(const point& other,int value = -1) const
 	{
-		if (abs(x-other.x) <= value && abs(y-other.y) <= value)
-			return ceil(sqrt(pow(abs(x-other.x),2) + pow(abs(y-other.y),2) ));
+		if (value == -1 || (abs(x-other.x) <= value && abs(y-other.y) <= value))
+			return sqrt(pow(abs(x-other.x),2) + pow(abs(y-other.y),2) );
 		else
-			return 0xffffffff;
+			return std::numeric_limits<float>::max();
 	};
 	bool adjacent(const point& other,int value) const
 	{
@@ -149,8 +150,9 @@ private slots:
 
 private:
 	std::map<float,rgb_color> paleta;
+	std::vector<point> srcDstWay;
 	std::vector<std::vector<point>>pointsByLevel;
-	void searchWay(point src, point dst);
+	std::vector<point> searchWay(point src, point dst);
 	void processTags();
 	rgb_color ucharize(float v);
 

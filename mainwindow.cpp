@@ -61,7 +61,6 @@ std::map<float,rgb_color> loadPaleta()
     std::getline(iss, r, ',');
     std::getline(iss, g, ',');
     std::getline(iss, b, ',');
-		// std::cout<<std::stof(k)<<" "<<std::stoi(r)<<" "<<std::stoi(g)<<" "<<std::stoi(b)<<std::endl;
 		paleta[std::stof(k)] = rgb_color(std::stoi(r),std::stoi(g),std::stoi(b));
 	}
 	readFile.close();
@@ -71,9 +70,7 @@ std::map<float,rgb_color> loadPaleta()
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
-	std::cout << ceil(255/10.)+1 << '\n';
 	pointsByLevel = std::vector<std::vector<point>>(ceil(255/10.)+1,std::vector<point>());
-	std::cout << pointsByLevel.size() << '\n';
 
 	setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 	ui->setupUi(this);
@@ -252,6 +249,11 @@ void MainWindow::readPCD()
 		PCL_ERROR ("Couldn't read file pcd: %s\n", (std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".pcd").c_str()));
 		exit(1);
 	}
+	// 0.805 1.007
+
+	cloud = Filter_in_axis(cloud, "z", 0.0, 1.05, false);
+
+
 	viewer->addPointCloud(cloud, "cloud", 0, 0, 0);
 	// viewer->showCloud(cloud);
 
@@ -266,7 +268,7 @@ void MainWindow::readDepth()
 	readBufferFromFile(std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".depth"), bf, 640*480*4);
 	readBufferFromFile(std::string("../clouds/data")+std::to_string(ui->spinBox->value())+std::string(".rgb"), rgb, 640*480*3);
 	// osgTexture
-	drawColors();
+
 }
 #endif
 
@@ -282,47 +284,34 @@ void MainWindow::button_slot()
 	readPCD();
 	readDepth();
 #endif
+
+
 	std::vector< int > index;
 	removeNaNFromPointCloud(*cloud, *cloud, index);
-	// int n;
-	// std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds = euclideanClustering(cloud,n);
-	// int i=0;
-	// viewer->removeAllShapes();
-	// for(auto obj_scene:cluster_clouds)
-	// {
-	// 	i++;
-	// 	// pcl::PointCloud<pcl::PointXYZ>::Ptr *Obj = new ObjectType;
-	// 	// objectspointer.push_back(Obj);
-	// 	std::cout<<obj_scene->points.size()<<std::endl;
-	// 	// for(auto point : obj_scene->points)
-	// 		// std::cout << point.x << " " << point.y << " " << point.z << '\n';
-	//
-	// 	// if(obj_scene->points.size()>50000)
-	// 	// {
-	// 	// 	std::cout << "Asignando vertices" << '\n';
-	// 	// 	osg::Vec3Array* vertices = new osg::Vec3Array;
-	// 	// 	osg::Vec4Array* colors = new osg::Vec4Array;
-	// 	// 	colors->setName("Color");
-	// 	// 	colors->push_back(osg::Vec4(1,1,1,1));
-	// 	// 	vertices->setName("Vertex");
-	// 	// 	for(auto point : obj_scene->points)
-	// 	// 	{
-	// 	// 		std::cout << point.x << '\n';
-	// 	// 		vertices->push_back(osg::Vec3f(point.x*10.,point.y*10.,point.z*10.));
-	// 	// 	}
-	// 	// 	geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::QUADS,0,vertices->size()));
-	// 	// 	geom->setUseVertexBufferObjects(true);
-	// 	// 	geom->setVertexArray(vertices);
-	// 	// 	geom->setColorArray(colors, osg::Array::BIND_OVERALL);
-	// 	// 	geom->setVertexAttribArray(0, vertices, osg::Array::BIND_PER_VERTEX);;
-	// 	//
-	// 	// }
-	//
-	// 	// getBoundingBox(obj_scene,min_x, max_x, min_y, max_y, min_z, max_z);
-	// 	viewer->drawBoundingBox(obj_scene, std::to_string(i));
-	//
-	// 	// addCube(viewer, min_x, max_x, min_y, max_y, min_z, max_z, std::to_string(i));
-	// }
+	int n;
+
+	auto cloud_for_euclideanClustering = Filter_in_axis(cloud, "z", 0.0, 0.8, false);
+	viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
+	std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds = euclideanClustering(cloud_for_euclideanClustering,n);
+	int i=0;
+	viewer->removeAllShapes();
+	srcDstWay.clear();
+	for(auto obj_scene:cluster_clouds)
+	{
+		i++;
+		if(srcDstWay.size()<2)
+		{
+			auto center = getCentroid(obj_scene);
+			// Distancia focal 485pixel
+			float f = 485;
+			int y = f*center.x/center.z+640/2;
+			int x = f*center.y/center.z+480/2;
+			srcDstWay.push_back(point(x,y,0));
+			viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
+			viewer->drawBoundingBox(obj_scene, std::to_string(i));
+		}
+	}
+	drawColors();
 }
 
 void MainWindow::processTags()
@@ -376,17 +365,16 @@ Mat FILTER(Mat input)
 	return input;
 }
 
-vector< int > dijk2(int A, int B, const std::vector<point> points, int value)
+vector< int > dijk(int A, int B, const std::vector<point> points, int value)
 {
-	std::cout << __FUNCTION__ << '\n';
 	int n = points.size();
-  vector< unsigned long > dist(n, 0xffffffff);
+  vector< float > dist(n, std::numeric_limits<float>::max());
   vector< bool > vis(n, false);
 	std::vector< std::vector< int > > result(n, std::vector<int>());
   dist.at(A) = 0;
 	result.at(A).push_back(A);
 	int j, i, cur;
-	unsigned long path;
+	float path;
 	point curP;
 		for( i = 0; i < n; ++i)
 		{
@@ -415,7 +403,6 @@ vector< int > dijk2(int A, int B, const std::vector<point> points, int value)
 				}
 			}
 		}
-	std::cout << __FUNCTION__ << " end" << '\n';
 	return result[B];
 }
 
@@ -428,24 +415,19 @@ std::vector<point> reduceListPoints(std::vector<point> pointsToWay, int value)
 	return out;
 }
 
-void MainWindow::searchWay(point src, point dst)
+std::vector<point> MainWindow::searchWay(point src, point dst)
 {
-	std::cout << __FUNCTION__ << '\n';
 	std::vector<point> pointsToWay;
 	vector<int> way;
 	long dstIndex,srcIndex;
-	std::cout << src.getLevel()<<" " << dst.getLevel() << '\n';
 	int min = std::min(src.getLevel(),dst.getLevel());
 	int max = std::max(src.getLevel(),dst.getLevel());
 	int value = 4;
 	do {
-		std::cout << "Subiendo nivel niveles del " << min << " al " << max << '\n';
 		pointsToWay.clear();
 		for(int i = min; i<=max; i++)
 			pointsToWay.insert(pointsToWay.begin(), pointsByLevel[i].begin(), pointsByLevel[i].end());
-		std::cout << pointsToWay.size() << '\n';
 		pointsToWay = reduceListPoints(pointsToWay,value);
-		std::cout << pointsToWay.size() << '\n';
 		if(src.x%value!=0 || src.y%value!=0)
 			pointsToWay.push_back(src);
 		if(dst.x%value!=0 || dst.y%value !=0)
@@ -458,45 +440,45 @@ void MainWindow::searchWay(point src, point dst)
 		srcIndex = std::distance(pointsToWay.begin(), std::find(pointsToWay.begin(), pointsToWay.end(), src));
 		dstIndex = std::distance(pointsToWay.begin(), std::find(pointsToWay.begin(), pointsToWay.end(), dst));
 
-		way = dijk2(srcIndex, dstIndex, pointsToWay,value);
-		std::cout << "Sali de dijkstra" << '\n';
+		way = dijk(srcIndex, dstIndex, pointsToWay,value);
 	} while(way.empty() || way.back() != dstIndex || way.front() != srcIndex);
-	std::cout << "pointsToWay = "<<pointsToWay.size() << '\n';
-	std::cout << "way = "<<way.size() << '\n';
-
+	std::vector<point> result;
 	for(auto const &i:way)
-	{
-		int curX = pointsToWay[i].x;
-		int curY = pointsToWay[i].y;
-		for (int x =curX-value/2; x<curX+value/2; x++)
-			for (int y =curY-value/2; y<curY+value/2; y++)
-			{
-				if(x<0 || 480<=x || y<0 || 640<=y) continue;
-				int idx = x*640+y;
-				bb[idx*3 + 0] = bb[idx*3 + 1] = 0;
-				bb[idx*3 + 2] = 255;
-			}
-	}
-	int curX = src.x;
-	int curY = src.y;
-	for (int x =curX-value/2; x<curX+value/2; x++)
-		for (int y =curY-value/2; y<curY+value/2; y++)
-		{
-			if(x<0 || 480<=x || y<0 || 640<=y) continue;
-			int idx = x*640+y;
-			bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
-			bb[idx*3 + 0] = 255;
-		}
-	curX = dst.x;
-	curY = dst.y;
-	for (int x =curX-value/2; x<curX+value/2; x++)
-		for (int y =curY-value/2; y<curY+value/2; y++)
-		{
-			if(x<0 || 480<=x || y<0 || 640<=y) continue;
-			int idx = x*640+y;
-			bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
-			bb[idx*3 + 0] = 255;
-		}
+		result.push_back(pointsToWay.at(i));
+	return result;
+	// for(auto const &i:way)
+	// {
+	// 	int curX = pointsToWay[i].x;
+	// 	int curY = pointsToWay[i].y;
+	// 	for (int x =curX-value/2; x<curX+value/2; x++)
+	// 		for (int y =curY-value/2; y<curY+value/2; y++)
+	// 		{
+	// 			if(x<0 || 480<=x || y<0 || 640<=y) continue;
+	// 			int idx = x*640+y;
+	// 			bb[idx*3 + 0] = bb[idx*3 + 1] = 0;
+	// 			bb[idx*3 + 2] = 255;
+	// 		}
+	// }
+	// int curX = src.x;
+	// int curY = src.y;
+	// for (int x =curX-value/2; x<curX+value/2; x++)
+	// 	for (int y =curY-value/2; y<curY+value/2; y++)
+	// 	{
+	// 		if(x<0 || 480<=x || y<0 || 640<=y) continue;
+	// 		int idx = x*640+y;
+	// 		bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
+	// 		bb[idx*3 + 0] = 255;
+	// 	}
+	// curX = dst.x;
+	// curY = dst.y;
+	// for (int x =curX-value/2; x<curX+value/2; x++)
+	// 	for (int y =curY-value/2; y<curY+value/2; y++)
+	// 	{
+	// 		if(x<0 || 480<=x || y<0 || 640<=y) continue;
+	// 		int idx = x*640+y;
+	// 		bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
+	// 		bb[idx*3 + 0] = 255;
+	// 	}
 }
 
 void MainWindow::drawColors()
@@ -506,6 +488,10 @@ void MainWindow::drawColors()
 	float maxP = -1;
 	cv::Mat mask = cv::Mat::zeros(480, 640, CV_8U);
   cv::Mat out = cv::Mat::zeros(480, 640, CV_8U);
+	std::vector<float> disSrcDst(2,std::numeric_limits<float>::max());
+	// pointsByLevel.clear();
+	for(auto listLevel:pointsByLevel)
+		listLevel.clear();
 	for (uint32_t r=0; r<480; r++)
 	{
 		for (uint32_t c=0; c<640; c++)
@@ -542,22 +528,23 @@ void MainWindow::drawColors()
 				}
 				int level = ceil(v/10.);
 				point p = point((int)r,(int)c,level);
-				if (level == 16)
-					std::cout <<level << " "<< r<<" "<<c << '\n';
-				if ( r == 410 && c == 54)
-					src = p;
-				else if( r == 409 && c == 586)
-					dst = p;
-				// if ( r == 50 && c == 150)
-				// 	src = p;
-				// else if( r == 300 && c == 500)
-				// 	dst = p;
+				if (srcDstWay.size() == 2)
+					for(unsigned int i=0; i< srcDstWay.size(); i++)
+					{
+						if(srcDstWay.at(i).adjacentDistance(p)<disSrcDst.at(i))
+						{
+							disSrcDst.at(i) = srcDstWay.at(i).adjacentDistance(p);
+							if(i==1)
+								src = p;
+							else
+								dst = p;
+						}
+					}
 				pointsByLevel.at(level).push_back(p);
 				rgb_color c = ucharize(v);
 				bb[idx*3 + 0] = (uint8_t)c.r;
 				bb[idx*3 + 1] = (uint8_t)c.g;
 				bb[idx*3 + 2] = (uint8_t)c.b;
-
 			}
 		}
 	}
@@ -576,6 +563,6 @@ void MainWindow::drawColors()
 				}
 		}
 	}
-
-	searchWay(src, dst);
+	// animar camino
+	auto way = searchWay(src, dst);
 }
