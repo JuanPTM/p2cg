@@ -4,7 +4,8 @@
 
 osgWay::osgWay(OsgView *osgw)
 {
-  osg::Box *box = new osg::Box(osg::Vec3(0.0f,0.0f,0.0f),0.1,0.1,0.1);
+  float k=1.3;
+  osg::Box *box = new osg::Box(osg::Vec3(-10.24*k/2,-7.68*k/2,0.0f),0.1,0.1,0.1);
   osg::ShapeDrawable *boxDrawable = new osg::ShapeDrawable(box);
   boxDrawable->setColor(osg::Vec4(1.0,0.0,0.0,1.0));
   osg::Geode *geo = new osg::Geode();
@@ -19,6 +20,8 @@ osgWay::osgWay(OsgView *osgw)
   numActivePats =0;
   osgw->getRootGroup()->addChild(this);
   this->setAllChildrenOff();
+  step=4;
+  state=0;
 }
 
 osgWay::~osgWay()
@@ -35,10 +38,10 @@ void osgWay::setWay(const std::vector<point> &way)
     jump = ceil(way.size()/MAX_POINTS);
   for(unsigned int i = 0; i<way.size(); i+=jump)
   {
-    x = way.at(i).x*k/100;
-    y = way.at(i).y*k/100;
+    y = ((way.at(i).x *(5.12*k/320)));
+    x = ((way.at(i).y *(3.84*k/240)));
     auto pat = (osg::PositionAttitudeTransform *)this->getChild(j);
-    pat->setPosition(osg::Vec3(x,y,0.0f));
+    pat->setPosition(osg::Vec3(x,y,-0.5f));
     j++;
   }
   numActivePats = j;
@@ -55,11 +58,17 @@ void osgWay::hide()
 
 void osgWay::update()
 {
+
   if(active)
   {
     for(int i=0; i<numActivePats; i++)
     {
-      this->setSingleChildOn(i);
+      if (i%step==state){
+        this->setValue(i,true);
+      }else{
+        this->setValue(i,false);
+      }
     }
+    state=(state+1)%step;
   }
 }

@@ -326,7 +326,7 @@ void MainWindow::processTags()
 	luzroja->switchLuz(false);
 	float k=1.3;
 	luzblanca->move(-10.24*k/2, 7.68*k/2, -100);
-	luzblanca->switchLuz(false);
+	luzblanca->switchLuz(true);
   	//Procesar AprilTags
 	Mat imgray;
 	cv::cvtColor(cv_image, imgray, cv::COLOR_RGB2GRAY);
@@ -445,39 +445,41 @@ std::vector<point> MainWindow::searchWay(point src, point dst)
 	for(auto const &i:way)
 		result.push_back(pointsToWay.at(i));
 	return result;
-	// for(auto const &i:way)
-	// {
-	// 	int curX = pointsToWay[i].x;
-	// 	int curY = pointsToWay[i].y;
-	// 	for (int x =curX-value/2; x<curX+value/2; x++)
-	// 		for (int y =curY-value/2; y<curY+value/2; y++)
-	// 		{
-	// 			if(x<0 || 480<=x || y<0 || 640<=y) continue;
-	// 			int idx = x*640+y;
-	// 			bb[idx*3 + 0] = bb[idx*3 + 1] = 0;
-	// 			bb[idx*3 + 2] = 255;
-	// 		}
-	// }
-	// int curX = src.x;
-	// int curY = src.y;
-	// for (int x =curX-value/2; x<curX+value/2; x++)
-	// 	for (int y =curY-value/2; y<curY+value/2; y++)
-	// 	{
-	// 		if(x<0 || 480<=x || y<0 || 640<=y) continue;
-	// 		int idx = x*640+y;
-	// 		bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
-	// 		bb[idx*3 + 0] = 255;
-	// 	}
-	// curX = dst.x;
-	// curY = dst.y;
-	// for (int x =curX-value/2; x<curX+value/2; x++)
-	// 	for (int y =curY-value/2; y<curY+value/2; y++)
-	// 	{
-	// 		if(x<0 || 480<=x || y<0 || 640<=y) continue;
-	// 		int idx = x*640+y;
-	// 		bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
-	// 		bb[idx*3 + 0] = 255;
-	// 	}
+/*
+	 for(auto const &i:way)
+	 {
+	 	int curX = pointsToWay[i].x;
+	 	int curY = pointsToWay[i].y;
+	 	for (int x =curX-value/2; x<curX+value/2; x++)
+	 		for (int y =curY-value/2; y<curY+value/2; y++)
+	 		{
+	 			if(x<0 || 480<=x || y<0 || 640<=y) continue;
+	 			int idx = x*640+y;
+	 			bb[idx*3 + 0] = bb[idx*3 + 1] = 0;
+	 			bb[idx*3 + 2] = 255;
+	 		}
+	 }
+	 int curX = src.x;
+	 int curY = src.y;
+	 for (int x =curX-value/2; x<curX+value/2; x++)
+	 	for (int y =curY-value/2; y<curY+value/2; y++)
+	 	{
+	 		if(x<0 || 480<=x || y<0 || 640<=y) continue;
+	 		int idx = x*640+y;
+	 		bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
+	 		bb[idx*3 + 0] = 255;
+	 	}
+	 curX = dst.x;
+	 curY = dst.y;
+	 for (int x =curX-value/2; x<curX+value/2; x++)
+	 	for (int y =curY-value/2; y<curY+value/2; y++)
+	 	{
+	 		if(x<0 || 480<=x || y<0 || 640<=y) continue;
+	 		int idx = x*640+y;
+	 		bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
+	 		bb[idx*3 + 0] = 255;
+	 	}
+*/
 }
 
 void MainWindow::drawColors()

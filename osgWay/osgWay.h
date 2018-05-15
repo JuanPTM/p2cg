@@ -13,6 +13,8 @@ class osgWay: public  osg::Switch
 private:
   int numActivePats;
   bool active;
+  int state;
+  int step;
 public:
   osgWay(OsgView *osgw);
   ~osgWay();
