@@ -22,6 +22,7 @@ osgWay::osgWay(OsgView *osgw)
   this->setAllChildrenOff();
   step=4;
   state=0;
+  osg = osgw;
 }
 
 osgWay::~osgWay()
@@ -46,6 +47,26 @@ void osgWay::setWay(const std::vector<point> &way)
   }
   numActivePats = j;
   active = true;
+  
+  osg::Node *osgMeshSRC = osgDB::readNodeFile("../mesh/gualzru.osg");
+  osg::Node *osgMeshDST = osgDB::readNodeFile("../mesh/gualzru.osg");
+  osg::PositionAttitudeTransform *patsrc = new osg::PositionAttitudeTransform;
+  osg::PositionAttitudeTransform *patdst = new osg::PositionAttitudeTransform;
+  point psrc = way.front();
+  point pdst = way.back();
+//  patsrc->setPosition(osg::Vec3(-10.24*k/2,-7.68*k/2,0.0f));
+//  patdst->setPosition(osg::Vec3(-10.24*k/2,-7.68*k/2,0.0f));
+  
+  patsrc->setPosition(osg::Vec3(psrc.y*(3.84*k/240)-10.24*k/2,psrc.x*(5.12*k/320)-7.68*k/2,-0.5f));
+  patsrc->setScale(osg::Vec3(0.03,0.03,-0.03));
+  patdst->setPosition(osg::Vec3(pdst.y*(3.84*k/240)-10.24*k/2,pdst.x*(5.12*k/320)-7.68*k/2,-0.5f));
+  patdst->setScale(osg::Vec3(0.03,0.03,-0.03));
+  patsrc->addChild(osgMeshSRC);
+  patdst->addChild(osgMeshDST);
+  this->addChild(patsrc);
+  this->addChild(patdst);
+  this->setValue(100,true);
+  this->setValue(101,true);
 }
 
 

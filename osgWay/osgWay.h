@@ -15,6 +15,7 @@ private:
   bool active;
   int state;
   int step;
+  OsgView *osg;
 public:
   osgWay(OsgView *osgw);
   ~osgWay();
