@@ -1,72 +1,4 @@
-#include <mutex>
-#include <thread>
-
 #include "mainwindow.h"
-
-#include "ui_mainwindow.h"
-
-
-float normalizeFloat(float v)
-{
-	if (v > 255)
-		v = 255;
-	if (v < 0)
-		v = 0;
-	return v;
-}
-
-long mymap(long x, long in_min, long in_max, long out_min, long out_max)
-{
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
-//AQUI AÑADIR LA PALETA
-rgb_color MainWindow::ucharize(float v)
-{
-	if (v >= 255)
-		return rgb_color(0,0,80);
-	if (v <= 0)
-		return rgb_color(255,255,255);
-	rgb_color prev(0,0,80), next(0,0,80);
-	float prev_k = 255, next_k = 255;
-	for (auto const& fila : paleta)
-	{
-		if (fila.first > v){
-			next = fila.second;
-			next_k = fila.first;
-			break;
-		}
-		else{
-			prev_k = fila.first;
-			prev = fila.second;
-		}
-	}
-
-	uchar r = (uchar)mymap(v,prev_k,next_k,prev.r,next.r);
-	uchar g = (uchar)mymap(v,prev_k,next_k,prev.g,next.g);
-	uchar b = (uchar)mymap(v,prev_k,next_k,prev.b,next.b);
-	return rgb_color(r,g,b);
-}
-
-
-std::map<float,rgb_color> loadPaleta()
-{
-	std::string k,r,g,b;
-	ifstream readFile("../paleta.cfg");
-	std::string line;
-	std::map<float,rgb_color> paleta;
-	while(std::getline(readFile,line))   {
-    std::stringstream iss(line);
-    std::getline(iss, k, '=');
-    std::getline(iss, r, ',');
-    std::getline(iss, g, ',');
-    std::getline(iss, b, ',');
-		paleta[std::stof(k)] = rgb_color(std::stoi(r),std::stoi(g),std::stoi(b));
-	}
-	readFile.close();
-	return paleta;
-}
-
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
@@ -113,16 +45,18 @@ void MainWindow::initCamera()
 		try
 		{
 			// create a new grabber for OpenNI devices
-			grabber = new pcl::io::OpenNI2Grabber();
+			// grabber = new pcl::io::OpenNI2Grabber();
+			grabber = new pcl::OpenNIGrabber();
+
 
 			// Register Callback Function
 			boost::function<void(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f = boost::bind(&MainWindow::computeRGBD, this, _1);
 			grabber->registerCallback(f);
 
-			boost::function<void(const boost::shared_ptr<pcl::io::openni2::Image> &)> f2 = boost::bind(&MainWindow::computeImages, this, _1);
+			boost::function<void(const boost::shared_ptr<openni_wrapper::Image> &)> f2 = boost::bind(&MainWindow::computeImages, this, _1);
 			grabber->registerCallback(f2);
 
-			boost::function<void(const boost::shared_ptr<pcl::io::openni2::DepthImage> &)> f3 = boost::bind(&MainWindow::computeImages2, this, _1);
+			boost::function<void(const boost::shared_ptr<openni_wrapper::DepthImage> &)> f3 = boost::bind(&MainWindow::computeImages2, this, _1);
 			grabber->registerCallback(f3);
 
 			// Start Retrieve Data
@@ -169,8 +103,8 @@ void MainWindow::init3D()
 	pat->addChild(shapeGeode);
 
 
-	float k = 1.3;
-	osg::Box *box = new osg::Box( osg::Vec3(0, 0, 0), -10.24*k, 7.68*k, 0.01);
+	// float k = 1.3;
+	osg::Box *box = new osg::Box( osg::Vec3(0, 0, 0), -10.24*Kfactor, 7.68*Kfactor, 0.01);
 	osg::ShapeDrawable *boxDrawable = new osg::ShapeDrawable(box);
 	shapeGeode->addDrawable(boxDrawable);
 
@@ -208,7 +142,7 @@ void MainWindow::computeOSG()
 #ifdef READ_DATA_FROM_DEVICE
 void MainWindow::computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud_l)
 {
-	static uint32_t count = 0;
+	// static uint32_t count = 0;
 	if (cloud == NULL)
 		cloud = pcl::PointCloud< pcl::PointXYZRGBA >::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>(*cloud_l));
 	*cloud = *cloud_l;
@@ -217,7 +151,7 @@ void MainWindow::computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr 
 	// viewer->showCloud(cloud_l);
 }
 
-void MainWindow::computeImages(const boost::shared_ptr<pcl::io::openni2::Image> &o_image)
+void MainWindow::computeImages(const boost::shared_ptr<openni_wrapper::Image> &o_image)
 {
 	static unsigned count = 0;
 	count++;
@@ -228,7 +162,7 @@ void MainWindow::computeImages(const boost::shared_ptr<pcl::io::openni2::Image> 
 	o_image->fillRGB(o_image->getWidth(), o_image->getHeight(), rgb, 0);
 }
 
-void MainWindow::computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthImage> &dimg)
+void MainWindow::computeImages2(const boost::shared_ptr<openni_wrapper::DepthImage> &dimg)
 {
 	static uint32_t count = 0;
 	count++;
@@ -280,8 +214,9 @@ void MainWindow::readDepth()
 void MainWindow::button_slot()
 {
 	move(0,0);
+	int n;
 #ifdef READ_DATA_FROM_DEVICE
-	int n = ui->spinBox->value();
+	n = ui->spinBox->value();
 	pcl::io::savePCDFileASCII (std::string("data")+std::to_string(n)+std::string(".pcd"), *cloud);
 	writeBufferToFile(std::string("data")+std::to_string(n)+std::string(".depth"), bf, 640*480*4);
 	writeBufferToFile(std::string("data")+std::to_string(n)+std::string(".rgb"), rgb, 640*480*3);
@@ -293,7 +228,6 @@ void MainWindow::button_slot()
 
 	std::vector< int > index;
 	removeNaNFromPointCloud(*cloud, *cloud, index);
-	int n;
 
 	auto cloud_for_euclideanClustering = Filter_in_axis(cloud, "z", 0.0, 0.8, false);
 	viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
@@ -324,8 +258,8 @@ void MainWindow::processTags()
 
 	//Apagar luces
 	luzroja->switchLuz(false);
-	float k=1.3;
-	luzblanca->move(-10.24*k/2, 7.68*k/2, -100);
+	// float k=1.3;
+	luzblanca->move(-10.24*Kfactor/2, 7.68*Kfactor/2, -100);
 	luzblanca->switchLuz(true);
   	//Procesar AprilTags
 	Mat imgray;
@@ -338,80 +272,15 @@ void MainWindow::processTags()
 		int y = april.cxy.second;
 		if(april.id == 31)
 		{
-			luzroja->move(x*k/100, y*k/100, -100);
+			luzroja->move(x*Kfactor/100, y*Kfactor/100, -100);
 			luzroja->switchLuz(true);
 		}
 		else if(april.id == 30)
 		{
-			luzblanca->move(x*k/100, y*k/100, -100);
+			luzblanca->move(x*Kfactor/100, y*Kfactor/100, -100);
 			luzblanca->switchLuz(true);
 		}
 	}
-}
-
-Mat FILTER(Mat input)
-{
-	for (int r=0; r<480; r++)
-	{
-		for (int c=0; c<640; c++)
-		{
-				if(input.at<uchar>(r, c) != 0  && input.at<uchar>(r+1, c) != 0 && input.at<uchar>(r, c+1) != 0 && input.at<uchar>(r+1, c+1) != 0 )
-				{
-					input.at<uchar>(r, c) = 0;
-				}
-		}
-	}
-	return input;
-}
-
-vector< int > dijk(int A, int B, const std::vector<point> points, int value)
-{
-	int n = points.size();
-  vector< float > dist(n, std::numeric_limits<float>::max());
-  vector< bool > vis(n, false);
-	std::vector< std::vector< int > > result(n, std::vector<int>());
-  dist.at(A) = 0;
-	result.at(A).push_back(A);
-	int j, i, cur;
-	float path;
-	point curP;
-		for( i = 0; i < n; ++i)
-		{
-				cur = -1;
-				for(j = 0; j < n; ++j)
-				{
-					if (vis[j]) continue;
-					if (cur == -1 || dist[j] < dist[cur])
-						cur = j;
-				}
-				vis[cur] = true;
-				curP = points.at(cur);
-			for(j = 0; j < n; ++j)
-			{
-				if(j == cur) continue;
-				if(curP.adjacent(points.at(j), value))
-				{
-					path = dist.at(cur)+ curP.adjacentDistance(points.at(j), value);
-					if (path < dist.at(j))
-					{
-						dist.at(j) = path;
-						result.at(j).clear();
-						result.at(j).insert(result.at(j).begin(), result.at(cur).begin(),result.at(cur).end());
-						result.at(j).push_back(j);
-					}
-				}
-			}
-		}
-	return result[B];
-}
-
-std::vector<point> reduceListPoints(std::vector<point> pointsToWay, int value)
-{
-	std::vector<point> out;
-	for(auto const p:pointsToWay)
-		if(p.x%value==0 && p.y%value ==0)
-			out.push_back(p);
-	return out;
 }
 
 std::vector<point> MainWindow::searchWay(point src, point dst)
@@ -542,7 +411,7 @@ void MainWindow::drawColors()
 						}
 					}
 				pointsByLevel.at(level).push_back(p);
-				rgb_color c = ucharize(v);
+				rgb_color c = ucharize(v, paleta);
 				bb[idx*3 + 0] = (uint8_t)c.r;
 				bb[idx*3 + 1] = (uint8_t)c.g;
 				bb[idx*3 + 2] = (uint8_t)c.b;
@@ -569,5 +438,5 @@ void MainWindow::drawColors()
 	{
 		auto way = searchWay(src, dst);
 		osgway->setWay(way);
-	}	
+	}
 }

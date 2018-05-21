@@ -3,7 +3,7 @@
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-// #define READ_DATA_FROM_DEVICE
+#define READ_DATA_FROM_DEVICE
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -17,7 +17,10 @@
 #include <math.h>
 #include <limits>
 #include "Luz/luz.h"
+#include "ui_mainwindow.h"
+
 #include "computepointcloud/computepointcloud.h"
+#include "processfunction/processfunction.h"
 #include "osgWay/osgWay.h"
 #include "types/types.h"
 #include "opencv2/highgui/highgui.hpp"
@@ -26,7 +29,9 @@
 #include <AprilTags/Tag36h11.h>
 #ifndef Q_MOC_RUN
 	#include <pcl/visualization/pcl_visualizer.h>
-	// #include <pcl/io/openni2_grabber.h>
+#ifdef READ_DATA_FROM_DEVICE
+	#include <pcl/io/openni_grabber.h>
+#endif
 	#include <pcl/visualization/boost.h>
 
 	#include <opencv2/core/core.hpp>
@@ -45,9 +50,12 @@
 #include <QGraphicsPixmapItem>
 #include <osg/Texture3D>
 #include <osgview.h>
+#include <mutex>
+#include <thread>
+
 using namespace cv;
 using namespace computepointcloud;
-
+using namespace processfunction;
 namespace Ui
 {
 	class MainWindow;
@@ -63,8 +71,8 @@ public:
 
 #ifdef READ_DATA_FROM_DEVICE
 	void computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud);
-	void computeImages(const boost::shared_ptr<pcl::io::openni2::Image> &);
-	void computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthImage>&);
+	void computeImages(const boost::shared_ptr<openni_wrapper::Image> &);
+	void computeImages2(const boost::shared_ptr<openni_wrapper::DepthImage>&);
 #else
 	void readPCD();
 	void readDepth();
@@ -87,7 +95,7 @@ private:
 	std::vector<point> searchWay(point src, point dst);
 	osgWay *osgway;
 	void processTags();
-	rgb_color ucharize(float v);
+	// rgb_color ucharize(float v);
 
 	QTimer timerOSG;
 	Ui::MainWindow *ui;
@@ -98,7 +106,9 @@ private:
 	::AprilTags::TagDetector* tagDetector;
 
 #ifdef READ_DATA_FROM_DEVICE
-	pcl::io::OpenNI2Grabber* grabber;
+	pcl::Grabber* grabber;
+	// pcl::io::OpenNI2Grabber* grabber;
+
 #endif
 
 	cv::Mat cv_image;

@@ -7,6 +7,8 @@
 #include <math.h>
 #include <limits>
 
+#define Kfactor 1.3
+
 typedef struct rgb_color
 {
 	uchar r;
