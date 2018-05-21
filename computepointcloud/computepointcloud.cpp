@@ -30,37 +30,41 @@
 
 std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> computepointcloud::euclideanClustering(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud,int &numCluseters)
 {
-	std::vector<pcl::PointIndices> cluster_indices;
 	std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds;
-	pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBA>);
-	tree->setInputCloud (cloud);
-	cluster_indices.clear();
-	cluster_clouds.clear();
-	pcl::EuclideanClusterExtraction<pcl::PointXYZRGBA> ec;
-
-	ec.setClusterTolerance (0.02);
-	ec.setMinClusterSize (100);
-	ec.setMaxClusterSize (270000);
-	ec.setSearchMethod (tree);
-
-	ec.setInputCloud (cloud);
-	ec.extract (cluster_indices);
-	int j = 0;
-	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+	numCluseters = 0;
+	if(cloud->points.size() != 0)
 	{
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZRGBA>);
-		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
-			cloud_cluster->points.push_back (cloud->points[*pit]); //*
-		cloud_cluster->width = cloud_cluster->points.size ();
-		cloud_cluster->height = 1;
-		cloud_cluster->is_dense = true;
+		std::vector<pcl::PointIndices> cluster_indices;
+		pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGBA>);
+		tree->setInputCloud (cloud);
+		cluster_indices.clear();
+		cluster_clouds.clear();
+		pcl::EuclideanClusterExtraction<pcl::PointXYZRGBA> ec;
 
-		//save the cloud at
-		cluster_clouds.push_back(cloud_cluster);
+		ec.setClusterTolerance (0.02);
+		ec.setMinClusterSize (100);
+		ec.setMaxClusterSize (270000);
+		ec.setSearchMethod (tree);
+
+		ec.setInputCloud (cloud);
+		ec.extract (cluster_indices);
+		int j = 0;
+		for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+		{
+			pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZRGBA>);
+			for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
+			cloud_cluster->points.push_back (cloud->points[*pit]); //*
+			cloud_cluster->width = cloud_cluster->points.size ();
+			cloud_cluster->height = 1;
+			cloud_cluster->is_dense = true;
+
+			//save the cloud at
+			cluster_clouds.push_back(cloud_cluster);
 
 			j++;
+		}
+		numCluseters = cluster_clouds.size();
 	}
-	numCluseters =cluster_clouds.size();
 	return cluster_clouds;
 }
 

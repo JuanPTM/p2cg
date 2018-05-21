@@ -565,6 +565,9 @@ void MainWindow::drawColors()
 		}
 	}
 	// animar camino
-	auto way = searchWay(src, dst);
-	osgway->setWay(way);
+	if(srcDstWay.size()>=2)
+	{
+		auto way = searchWay(src, dst);
+		osgway->setWay(way);
+	}	
 }
