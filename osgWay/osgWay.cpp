@@ -23,8 +23,8 @@ osgWay::osgWay(OsgView *osgw)
   step=4;
   state=0;
   osg = osgw;
-  osg::PositionAttitudeTransform *patsrc = new osg::PositionAttitudeTransform;
-  osg::PositionAttitudeTransform *patdst = new osg::PositionAttitudeTransform;
+  osg::PositionAttitudeTransform *patsrc = new osg::PositionAttitudeTransform();
+  osg::PositionAttitudeTransform *patdst = new osg::PositionAttitudeTransform();
   this->addChild(patsrc);
   this->addChild(patdst);
 }
