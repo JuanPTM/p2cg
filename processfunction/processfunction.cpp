@@ -3,7 +3,7 @@
 
 
 
-cv::Mat processfunction::FILTER(cv::Mat input)
+void processfunction::FILTER(cv::Mat &input)
 {
 	for (int r=0; r<480; r++)
 	{
@@ -15,12 +15,12 @@ cv::Mat processfunction::FILTER(cv::Mat input)
 				}
 		}
 	}
-	return input;
+	// return input;
 }
 
 
 
-std::vector< int >processfunction::dijk(int A, int B, const std::vector<point> points, int value)
+std::vector< int >processfunction::dijk(const int &A, const int &B, const std::vector<point> &points, const int &value)
 {
 	int n = points.size();
   vector< float > dist(n, std::numeric_limits<float>::max());
@@ -61,7 +61,7 @@ std::vector< int >processfunction::dijk(int A, int B, const std::vector<point> p
 	return result[B];
 }
 
-std::vector<point> processfunction::reduceListPoints(std::vector<point> pointsToWay, int value)
+std::vector<point> processfunction::reduceListPoints(const std::vector<point> &pointsToWay, const int &value)
 {
 	std::vector<point> out;
 	for(auto const p:pointsToWay)
@@ -90,7 +90,7 @@ std::map<float,rgb_color> processfunction::loadPaleta()
 }
 
 
-rgb_color processfunction::ucharize(float v, std::map<float,rgb_color> paleta)
+rgb_color processfunction::ucharize(const float &v, const std::map<float,rgb_color> &paleta)
 {
 	if (v >= 255)
 		return rgb_color(0,0,80);
@@ -117,16 +117,16 @@ rgb_color processfunction::ucharize(float v, std::map<float,rgb_color> paleta)
 	return rgb_color(r,g,b);
 }
 
-long processfunction::mymap(long x, long in_min, long in_max, long out_min, long out_max)
+long processfunction::mymap(const long &x,const  long &in_min,const  long &in_max,const  long &out_min,const  long &out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-float processfunction::normalizeFloat(float v)
+void processfunction::normalizeFloat(float &v)
 {
 	if (v > 255)
 		v = 255;
 	if (v < 0)
 		v = 0;
-	return v;
+	// return v;
 }

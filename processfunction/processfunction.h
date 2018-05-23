@@ -15,13 +15,13 @@ using namespace std;
 
 namespace processfunction
 {
-  cv::Mat FILTER(cv::Mat input);
-  std::vector< int > dijk(int A, int B, const std::vector<point> points, int value);
-  std::vector<point> reduceListPoints(std::vector<point> pointsToWay, int value);
+  void FILTER(cv::Mat &input);
+  std::vector< int > dijk(const int &A, const int &B, const std::vector<point> &points, const int &value);
+  std::vector<point> reduceListPoints(const std::vector<point> &pointsToWay, const int &value);
   std::map<float,rgb_color> loadPaleta();
-  rgb_color ucharize(float v, std::map<float,rgb_color> paleta);
-  long mymap(long x, long in_min, long in_max, long out_min, long out_max);
-  float normalizeFloat(float v);
+  rgb_color ucharize(const float &v, const std::map<float,rgb_color> &paleta);
+  long mymap(const long &x, const long &in_min, const long &in_max, const long &out_min, const long &out_max);
+  void  normalizeFloat(float &v);
 
 }
 

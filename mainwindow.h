@@ -52,6 +52,7 @@
 #include <osgview.h>
 #include <mutex>
 #include <thread>
+#include <algorithm>
 
 using namespace cv;
 using namespace computepointcloud;
@@ -73,6 +74,7 @@ public:
 	void computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud);
 	void computeImages(const boost::shared_ptr<openni_wrapper::Image> &);
 	void computeImages2(const boost::shared_ptr<openni_wrapper::DepthImage>&);
+	void processScene();
 #else
 	void readPCD();
 	void readDepth();
@@ -94,26 +96,27 @@ private:
 	std::vector<std::vector<point>>pointsByLevel;
 	std::vector<point> searchWay(point src, point dst);
 	osgWay *osgway;
-	void processTags();
-	// rgb_color ucharize(float v);
+	std::mutex mtx_cloud, mtx_rgb, mtx_bf;
+
 
 	QTimer timerOSG;
 	Ui::MainWindow *ui;
 	pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud;
-	// pcl::visualization::CloudViewer *viewer;
+	pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud_to_process;
 	Viewer *viewer;
 	OsgView *osgw;
 	::AprilTags::TagDetector* tagDetector;
 
+	void processTags();
+
 #ifdef READ_DATA_FROM_DEVICE
 	pcl::Grabber* grabber;
 	// pcl::io::OpenNI2Grabber* grabber;
-
 #endif
 
 	cv::Mat cv_image;
-	uint8_t *rgb;
-	float *bf;
+	uint8_t *rgb, *rgb_to_process;
+	float *bf, *bf_to_process;
 	uint8_t *bb;
 	osg::Image *osgImage;
 	osg::ref_ptr<osg::Geometry> geom;
