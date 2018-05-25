@@ -96,8 +96,8 @@ private:
 	std::vector<std::vector<point>>pointsByLevel;
 	std::vector<point> searchWay(point src, point dst);
 	osgWay *osgway;
-	std::mutex mtx_cloud, mtx_rgb, mtx_bf;
-
+	std::mutex mtx_cloud, mtx_rgb, mtx_bf, mtx_bb;
+	std::thread TprocessScene;
 
 	QTimer timerOSG;
 	Ui::MainWindow *ui;
@@ -117,7 +117,7 @@ private:
 	cv::Mat cv_image;
 	uint8_t *rgb, *rgb_to_process;
 	float *bf, *bf_to_process;
-	uint8_t *bb;
+	uint8_t *bb, *bb_to_process;
 	osg::Image *osgImage;
 	osg::ref_ptr<osg::Geometry> geom;
 	osg::Texture *osgTexture;

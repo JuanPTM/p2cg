@@ -17,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	rgb = new uint8_t[640*480*3];
 	rgb_to_process = new uint8_t[640*480*3];
 	bb = new uint8_t[640*480*3];
+	bb_to_process = new uint8_t[640*480*3];
 	bf = new float[640*480*3];
 	bf_to_process = new float[640*480*3];
 	tagDetector = new ::AprilTags::TagDetector(::AprilTags::tagCodes36h11);
@@ -31,8 +32,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	connect(&timerOSG, SIGNAL(timeout()), this, SLOT(computeOSG()));
 	timerOSG.start(2);
 	connect(ui->loadButton, SIGNAL(clicked()), this, SLOT(button_slot()));
-	// std::thread TprocessScene(&MainWindow::processScene, this);
 	initCamera();
+	TprocessScene = std::thread(&MainWindow::processScene, this);
 }
 
 MainWindow::~MainWindow()
@@ -136,8 +137,9 @@ void MainWindow::computeOSG()
 	imshow("Image", cv_image);
 	cvWaitKey(1);
 
-
+	mtx_bb.lock();
 	osgImage->setImage(640, 480, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, bb, osg::Image::NO_DELETE);
+	mtx_bb.unlock();
 	osgTexture->setImage(0, osgImage);
 	bStateSetIMAGEN->setTextureAttributeAndModes(0, osgTexture, osg::StateAttribute::ON);
 	osgw->frame();
@@ -188,10 +190,9 @@ void MainWindow::computeImages2(const boost::shared_ptr<openni_wrapper::DepthIma
 
 void MainWindow::processScene()
 {
-	std::cout << "a--------" << '\n';
 	std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds;
 	int y,x,n;
-	// while (true) {
+	while (true) {
 		mtx_cloud.lock();
 		mtx_bf.lock();
 		mtx_rgb.lock();
@@ -201,36 +202,43 @@ void MainWindow::processScene()
 		mtx_rgb.unlock();
 		mtx_bf.unlock();
 		mtx_cloud.unlock();
+		std::cout << "a--------" << '\n';
 		if(cloud_to_process==NULL)
-			return;
-		// Eliminamos los puntos del arenero y de el suelo
-		auto cloud_for_euclideanClustering = Filter_in_axis(cloud_to_process, "z", 0.0, 0.8, false);
-
-		// Si hay mas de 200 puntos realiza euclideanClustering
-		if (cloud_for_euclideanClustering->points.size() !=200)
 		{
-			// viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
-			cluster_clouds = euclideanClustering(cloud_for_euclideanClustering, n);
-			// int i=0;
-			// viewer->removeAllShapes();
-			srcDstWay.clear();
-			for(auto obj_scene : cluster_clouds)
+			boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+			continue;
+		}
+		// Eliminamos los puntos del arenero y de el suelo
+		if(ui->checkBox->isChecked() || srcDstWay.size()>=2)
+		{
+			auto cloud_for_euclideanClustering = Filter_in_axis(cloud_to_process, "z", 0.0, 0.8, false);
+
+			// Si hay mas de 200 puntos realiza euclideanClustering
+			if (cloud_for_euclideanClustering->points.size() !=200)
 			{
-				// i++;
-				if(srcDstWay.size()<2)
+				// viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
+				cluster_clouds = euclideanClustering(cloud_for_euclideanClustering, n);
+				// int i=0;
+				// viewer->removeAllShapes();
+				srcDstWay.clear();
+				for(auto obj_scene : cluster_clouds)
 				{
-					auto center = getCentroid(obj_scene);
-					// focal = 485;
-					y = 485*center.x/center.z+640/2;
-					x = 485*center.y/center.z+480/2;
-					srcDstWay.push_back(point(x,y,0));
-					// viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
-					// viewer->drawBoundingBox(obj_scene, std::to_string(i));
+					// i++;
+					if(srcDstWay.size()<2)
+					{
+						auto center = getCentroid(obj_scene);
+						// focal = 485;
+						y = 485*center.x/center.z+640/2;
+						x = 485*center.y/center.z+480/2;
+						srcDstWay.push_back(point(x,y,0));
+						// viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
+						// viewer->drawBoundingBox(obj_scene, std::to_string(i));
+					}
 				}
 			}
 		}
 		drawColors();
-	// }
+	}
 }
 
 #else
@@ -269,52 +277,6 @@ void MainWindow::readDepth()
 }
 #endif
 
-
-
-// void MainWindow::processScene()
-// {
-// 	std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds;
-// 	int y,x,n;
-// 	while (true) {
-// 		mtx_cloud.lock();
-// 		mtx_bf.lock();
-// 		mtx_rgb.lock();
-// 		std::swap(cloud, cloud_to_process);
-// 		std::swap(bf, bf_to_process);
-// 		std::swap(rgb, rgb_to_process);
-// 		mtx_rgb.unlock();
-// 		mtx_bf.unlock();
-// 		mtx_cloud.unlock();
-// 		// Eliminamos los puntos del arenero y de el suelo
-// 		auto cloud_for_euclideanClustering = Filter_in_axis(cloud_to_process, "z", 0.0, 0.8, false);
-//
-// 		// Si hay mas de 200 puntos realiza euclideanClustering
-// 		if (cloud_for_euclideanClustering->points.size() !=200)
-// 		{
-// 			// viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
-// 			cluster_clouds = euclideanClustering(cloud_for_euclideanClustering, n);
-// 			// int i=0;
-// 			// viewer->removeAllShapes();
-// 			srcDstWay.clear();
-// 			for(auto obj_scene : cluster_clouds)
-// 			{
-// 				// i++;
-// 				if(srcDstWay.size()<2)
-// 				{
-// 					auto center = getCentroid(obj_scene);
-// 					// focal = 485;
-// 					y = 485*center.x/center.z+640/2;
-// 					x = 485*center.y/center.z+480/2;
-// 					srcDstWay.push_back(point(x,y,0));
-// 					// viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
-// 					// viewer->drawBoundingBox(obj_scene, std::to_string(i));
-// 				}
-// 			}
-// 		}
-// 		drawColors();
-// 	}
-// }
-
 void MainWindow::button_slot()
 {
 	// move(0,0);
@@ -338,28 +300,30 @@ void MainWindow::button_slot()
 	mtx_rgb.unlock();
 	mtx_bf.unlock();
 	mtx_cloud.unlock();
-
-	auto cloud_for_euclideanClustering = Filter_in_axis(cloud_to_process, "z", 0.0, 0.8, false);
-	if (cloud_for_euclideanClustering->points.size() !=0)
+	if(ui->checkBox->isChecked() || srcDstWay.size()>=2)
 	{
-		// viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
-		std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds = euclideanClustering(cloud_for_euclideanClustering,n);
-		int i=0;
-		viewer->removeAllShapes();
-		srcDstWay.clear();
-		for(auto obj_scene:cluster_clouds)
+		auto cloud_for_euclideanClustering = Filter_in_axis(cloud_to_process, "z", 0.0, 0.8, false);
+		if (cloud_for_euclideanClustering->points.size() !=0)
 		{
-			i++;
-			if(srcDstWay.size()<2)
+			// viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
+			std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds = euclideanClustering(cloud_for_euclideanClustering,n);
+			int i=0;
+			viewer->removeAllShapes();
+			srcDstWay.clear();
+			for(auto obj_scene:cluster_clouds)
 			{
-				auto center = getCentroid(obj_scene);
-				// Distancia focal 485pixel
-				float f = 485;
-				int y = f*center.x/center.z+640/2;
-				int x = f*center.y/center.z+480/2;
-				srcDstWay.push_back(point(x,y,0));
-				// viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
-				// viewer->drawBoundingBox(obj_scene, std::to_string(i));
+				i++;
+				if(srcDstWay.size()<2)
+				{
+					auto center = getCentroid(obj_scene);
+					// Distancia focal 485pixel
+					float f = 485;
+					int y = f*center.x/center.z+640/2;
+					int x = f*center.y/center.z+480/2;
+					srcDstWay.push_back(point(x,y,0));
+					// viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
+					// viewer->drawBoundingBox(obj_scene, std::to_string(i));
+				}
 			}
 		}
 	}
@@ -417,7 +381,7 @@ void MainWindow::drawColors()
 			float v = bf_to_process[idx];
 
 			if (std::isnan(v)){
-				bb[idx*3 + 0] = bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
+				bb_to_process[idx*3 + 0] = bb_to_process[idx*3 + 1] = bb_to_process[idx*3 + 2] = 0;
 				continue;
 			}
 			if (v>maxP)
@@ -426,7 +390,7 @@ void MainWindow::drawColors()
 			minP = v;
 			if (v<minV)
 			{
-				bb[idx*3 + 0] = bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
+				bb_to_process[idx*3 + 0] = bb_to_process[idx*3 + 1] = bb_to_process[idx*3 + 2] = 0;
 			}
 			else
 			{
@@ -452,9 +416,9 @@ void MainWindow::drawColors()
 				}
 				pointsByLevel.at(level).push_back(p);
 				rgb_color c = ucharize(v, paleta);
-				bb[idx*3 + 0] = (uint8_t)c.r;
-				bb[idx*3 + 1] = (uint8_t)c.g;
-				bb[idx*3 + 2] = (uint8_t)c.b;
+				bb_to_process[idx*3 + 0] = (uint8_t)c.r;
+				bb_to_process[idx*3 + 1] = (uint8_t)c.g;
+				bb_to_process[idx*3 + 2] = (uint8_t)c.b;
 			}
 		}
 	}
@@ -468,10 +432,13 @@ void MainWindow::drawColors()
 			idx = r*640+c;
 			if(mask.at<uchar>(r, c) == 255 )
 			{
-				bb[idx*3 + 0] = bb[idx*3 + 1] = bb[idx*3 + 2] = (uint8_t)0;
+				bb_to_process[idx*3 + 0] = bb_to_process[idx*3 + 1] = bb_to_process[idx*3 + 2] = (uint8_t)0;
 			}
 		}
 	}
+	mtx_bb.lock();
+	std::swap(bb, bb_to_process);
+	mtx_bb.unlock();
 	// animar camino
 	if(srcDstWay.size()>=2)
 	{
