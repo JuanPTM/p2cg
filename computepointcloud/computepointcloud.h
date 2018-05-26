@@ -18,7 +18,9 @@
 #include <pcl/features/moment_of_inertia_estimation.h>
 // #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/segmentation/extract_clusters.h>
-
+#include <pcl/filters/extract_indices.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/kdtree/kdtree_flann.h>
 
 // typedef pcl::PointXYZRGBA pcl::PointXYZRGBA;
 using namespace std;
@@ -27,6 +29,8 @@ namespace computepointcloud
   // void addCube(boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer, float min_x, float max_x, float min_y, float max_y, float min_z, float max_z, std::string id);
 
   std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> euclideanClustering(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud,int &numCluseters);
+
+  std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> euclideanClusteringDoN(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud,int &numCluseters);
 
   void getBoundingBox(pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud, float &min_x, float &max_x, float &min_y, float &max_y, float &min_z, float &max_z);
 

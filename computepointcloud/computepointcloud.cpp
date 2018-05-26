@@ -68,6 +68,57 @@ std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> computepointcloud::euclidea
 	return cluster_clouds;
 }
 
+std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> computepointcloud::euclideanClusteringDoN(pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud,int &numCluseters)
+{
+	pcl::VoxelGrid<pcl::PointXYZRGBA> sor;
+	sor.setInputCloud (cloud_ptr);
+	sor.setLeafSize (0.005f, 0.005f, 0.005f);
+	sor.filter (*cloud_ptr);
+
+	pcl::NormalEstimation<pcl::PointXYZRGBA, pcl::Normal> ne;
+  ne.setInputCloud (cloud);
+
+  std::cout << "Estimating the normals" << std::endl;
+  pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr tree_n (new pcl::search::KdTree<pcl::PointXYZRGBA>());
+  ne.setSearchMethod (tree_n);
+  ne.setRadiusSearch (0.03); // 2cm
+  ne.compute (*cloud_normals);
+  std::cout << "Estimated the normals" << std::endl;
+
+  // Creating the kdtree object for the search method of the extraction
+  boost::shared_ptr<pcl::KdTree<pcl::PointXYZRGBA> > tree_ec  (new pcl::KdTreeFLANN<pcl::PointXYZRGBA> ());
+  tree_ec->setInputCloud (cloud);
+
+  // Extracting Euclidean clusters using cloud and its normals
+  std::vector<int> indices;
+  std::vector<pcl::PointIndices> cluster_indices;
+  const float tolerance = 0.01f; // 1cm tolerance in (x, y, z) coordinate system
+  const double eps_angle = 40* (M_PI / 180.0); // 45degree tolerance in normals
+  const unsigned int min_cluster_size = 100;
+
+  pcl::extractEuclideanClusters (*cloud, *cloud_normals, tolerance, tree_ec, cluster_indices, eps_angle, min_cluster_size);
+
+	int j = 0;
+	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+	{
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZRGBA>);
+		for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
+			cloud_cluster->points.push_back (cloud->points[*pit]); //*
+		cloud_cluster->width = cloud_cluster->points.size ();
+		cloud_cluster->height = 1;
+		cloud_cluster->is_dense = true;
+
+		//save the cloud at
+		cluster_clouds.push_back(cloud_cluster);
+
+		j++;
+	}
+	numCluseters = cluster_clouds.size();
+}
+return cluster_clouds;
+
+}
+
 void computepointcloud::getBoundingBox(pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud, float &min_x, float &max_x, float &min_y, float &max_y, float &min_z, float &max_z)
 {
 	pcl::PointXYZRGBA min_point_AABB;
