@@ -33,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	timerOSG.start(2);
 	connect(ui->loadButton, SIGNAL(clicked()), this, SLOT(button_slot()));
 	initCamera();
-	TprocessScene = std::thread(&MainWindow::processScene, this);
+	// TprocessScene = std::thread(&MainWindow::processScene, this);
 }
 
 MainWindow::~MainWindow()
@@ -54,17 +54,17 @@ void MainWindow::initCamera()
 		try
 		{
 			// create a new grabber for OpenNI devices
-			// grabber = new pcl::io::OpenNI2Grabber();
-			grabber = new pcl::OpenNIGrabber();
+			grabber = new pcl::io::OpenNI2Grabber();
+			// grabber = new pcl::OpenNIGrabber();
 
 			// Register Callback Function
 			boost::function<void(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f = boost::bind(&MainWindow::computeRGBD, this, _1);
 			grabber->registerCallback(f);
 
-			boost::function<void(const boost::shared_ptr<openni_wrapper::Image> &)> f2 = boost::bind(&MainWindow::computeImages, this, _1);
+			boost::function<void(const boost::shared_ptr<pcl::io::openni2::Image> &)> f2 = boost::bind(&MainWindow::computeImages, this, _1);
 			grabber->registerCallback(f2);
 
-			boost::function<void(const boost::shared_ptr<openni_wrapper::DepthImage> &)> f3 = boost::bind(&MainWindow::computeImages2, this, _1);
+			boost::function<void(const boost::shared_ptr<pcl::io::openni2::DepthImage> &)> f3 = boost::bind(&MainWindow::computeImages2, this, _1);
 			grabber->registerCallback(f3);
 
 			// Start Retrieve Data
@@ -163,7 +163,7 @@ void MainWindow::computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr 
 	viewer->update();
 }
 
-void MainWindow::computeImages(const boost::shared_ptr<openni_wrapper::Image> &o_image)
+void MainWindow::computeImages(const boost::shared_ptr<pcl::io::openni2::Image> &o_image)
 {
 	static unsigned count = 0;
 	count++;
@@ -175,7 +175,7 @@ void MainWindow::computeImages(const boost::shared_ptr<openni_wrapper::Image> &o
 	mtx_rgb.unlock();
 }
 
-void MainWindow::computeImages2(const boost::shared_ptr<openni_wrapper::DepthImage> &dimg)
+void MainWindow::computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthImage> &dimg)
 {
 	static uint32_t count = 0;
 	count++;
@@ -193,6 +193,13 @@ void MainWindow::processScene()
 	std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds;
 	int y,x,n;
 	while (true) {
+		if(cloud==NULL)
+		{
+			boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+			continue;
+		}
+		// mtx_exclude.lock();
+
 		mtx_cloud.lock();
 		mtx_bf.lock();
 		mtx_rgb.lock();
@@ -202,42 +209,10 @@ void MainWindow::processScene()
 		mtx_rgb.unlock();
 		mtx_bf.unlock();
 		mtx_cloud.unlock();
-		std::cout << "a--------" << '\n';
-		if(cloud_to_process==NULL)
-		{
-			boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-			continue;
-		}
 		// Eliminamos los puntos del arenero y de el suelo
-		if(ui->checkBox->isChecked() || srcDstWay.size()>=2)
-		{
-			auto cloud_for_euclideanClustering = Filter_in_axis(cloud_to_process, "z", 0.0, 0.8, false);
-
-			// Si hay mas de 200 puntos realiza euclideanClustering
-			if (cloud_for_euclideanClustering->points.size() !=200)
-			{
-				// viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
-				cluster_clouds = euclideanClustering(cloud_for_euclideanClustering, n);
-				// int i=0;
-				// viewer->removeAllShapes();
-				srcDstWay.clear();
-				for(auto obj_scene : cluster_clouds)
-				{
-					// i++;
-					if(srcDstWay.size()<2)
-					{
-						auto center = getCentroid(obj_scene);
-						// focal = 485;
-						y = 485*center.x/center.z+640/2;
-						x = 485*center.y/center.z+480/2;
-						srcDstWay.push_back(point(x,y,0));
-						// viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
-						// viewer->drawBoundingBox(obj_scene, std::to_string(i));
-					}
-				}
-			}
-		}
 		drawColors();
+		// mtx_exclude.unlock();
+
 	}
 }
 
@@ -280,6 +255,7 @@ void MainWindow::readDepth()
 void MainWindow::button_slot()
 {
 	// move(0,0);
+	// mtx_exclude.lock();
 	int n;
 #ifdef READ_DATA_FROM_DEVICE
 	n = ui->spinBox->value();
@@ -300,34 +276,33 @@ void MainWindow::button_slot()
 	mtx_rgb.unlock();
 	mtx_bf.unlock();
 	mtx_cloud.unlock();
-	if(ui->checkBox->isChecked() || srcDstWay.size()>=2)
+	auto cloud_for_euclideanClustering = Filter_in_axis(cloud_to_process, "z", 0.0, 0.8, false);
+	if (cloud_for_euclideanClustering->points.size() !=0)
 	{
-		auto cloud_for_euclideanClustering = Filter_in_axis(cloud_to_process, "z", 0.0, 0.8, false);
-		if (cloud_for_euclideanClustering->points.size() !=0)
+		// viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
+		std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds = euclideanClustering(cloud_for_euclideanClustering,n);
+		int i=0;
+		viewer->removeAllShapes();
+		srcDstWay.clear();
+		for(auto obj_scene:cluster_clouds)
 		{
-			// viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
-			std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds = euclideanClustering(cloud_for_euclideanClustering,n);
-			int i=0;
-			viewer->removeAllShapes();
-			srcDstWay.clear();
-			for(auto obj_scene:cluster_clouds)
+			i++;
+			if(srcDstWay.size()<2)
 			{
-				i++;
-				if(srcDstWay.size()<2)
-				{
-					auto center = getCentroid(obj_scene);
-					// Distancia focal 485pixel
-					float f = 485;
-					int y = f*center.x/center.z+640/2;
-					int x = f*center.y/center.z+480/2;
-					srcDstWay.push_back(point(x,y,0));
-					// viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
-					// viewer->drawBoundingBox(obj_scene, std::to_string(i));
-				}
+				auto center = getCentroid(obj_scene);
+				// Distancia focal 485pixel
+				float f = 485;
+				int y = f*center.x/center.z+640/2;
+				int x = f*center.y/center.z+480/2;
+				srcDstWay.push_back(point(x,y,0));
+				// viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
+				// viewer->drawBoundingBox(obj_scene, std::to_string(i));
 			}
 		}
 	}
 	drawColors();
+	// mtx_exclude.unlock();
+
 }
 
 void MainWindow::processTags()
@@ -365,7 +340,6 @@ void MainWindow::drawColors()
 	point src,dst;
 	float minP = -1, maxP = -1;
 	cv::Mat mask = cv::Mat::zeros(480, 640, CV_8U);
-	cv::Mat out = cv::Mat::zeros(480, 640, CV_8U);
 	std::vector<float> disSrcDst(2,std::numeric_limits<float>::max());
 	uint32_t idx;
 	int level;
