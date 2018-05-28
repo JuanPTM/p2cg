@@ -417,7 +417,7 @@ void MainWindow::drawColors()
 	std::swap(bb, bb_to_process);
 	mtx_bb.unlock();
 	// animar camino
-	osgWay->hide();
+	osgway->hide();
 	if(srcDstWay.size()>=2)
 	{
 		auto way = searchWay(src, dst);
