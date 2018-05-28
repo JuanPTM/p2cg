@@ -17,7 +17,7 @@ private:
   int step;
   std::vector<double> preVec = {-1.,0.};
   OsgView *osg;
-  double calculateRotation(const std::vector<float> &Orientation);
+  double calculateRotation(const std::vector<float> &Orientation,float axis);
 public:
   osgWay(OsgView *osgw);
   ~osgWay();

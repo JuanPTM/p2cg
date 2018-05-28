@@ -61,29 +61,31 @@ void osgWay::setWay(const std::vector<point> &way)
   auto patsrc = (osg::PositionAttitudeTransform *)this->getChild(100);
   auto patdst = (osg::PositionAttitudeTransform *)this->getChild(101);
   point psrc = way.front();
-  point psrc2 = way.at(jump);
+  point psrc2 = way.at(2*jump);
   point pdst2 = way.at(way.size()-jump);
   point pdst = way.back();
+  
   patsrc->setPosition(osg::Vec3(psrc.y*(3.84*Kfactor/240)-10.24*Kfactor/2,psrc.x*(5.12*Kfactor/320)-7.68*Kfactor/2,-0.5f));
   patsrc->setScale(osg::Vec3(0.03,0.03,-0.03));
   patdst->setPosition(osg::Vec3(pdst.y*(3.84*Kfactor/240)-10.24*Kfactor/2,pdst.x*(5.12*Kfactor/320)-7.68*Kfactor/2,-0.5f));
   patdst->setScale(osg::Vec3(0.03,0.03,-0.03));
   
   std::vector<float> vecSrc = {psrc2.x-psrc.x,psrc2.y-psrc.y};
-  double angleSrc = calculateRotation(vecSrc);
+  double angleSrc = calculateRotation(vecSrc,(float)psrc.y);
 
   std::vector<float> vecDst = {pdst2.x-pdst.x,pdst2.y-pdst.y};
-  double angleDst = calculateRotation(vecDst);
+  double angleDst = calculateRotation(vecDst,(float)pdst.y);
 
 
-  patdst->setAttitude(osg::Quat(angleDst,osg::Vec3(0,0,1)));
-  patsrc->setAttitude(osg::Quat(angleSrc,osg::Vec3(0,0,1)));
+  patdst->setAttitude(osg::Quat(osg::DegreesToRadians(180.)-angleDst,osg::Vec3(0,0,1)));
+  patsrc->setAttitude(osg::Quat(osg::DegreesToRadians(180.)-angleSrc,osg::Vec3(0,0,1)));
   this->setValue(100,true);
   this->setValue(101,true);
 }
 
-double osgWay::calculateRotation(const std::vector<float> &Orientation)
+double osgWay::calculateRotation(const std::vector<float> &Orientation,float axis)
 {
+	preVec[1] = axis;
 	return acos((Orientation[0]*preVec[0]+Orientation[1]*preVec[1])/(sqrt(pow(preVec[0],2)+pow(preVec[1],2))*sqrt(pow(Orientation[0],2)+pow(Orientation[1],2))));
 }
 
