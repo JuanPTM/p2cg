@@ -30,6 +30,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	// viewer = new pcl::visualization::CloudViewer("cloud");
 
 	connect(&timerOSG, SIGNAL(timeout()), this, SLOT(computeOSG()));
+	connect(&timerSearchWay, SIGNAL(timeout()), this, SLOT(button_slot()));
+
+	timerSearchWay.start(15000);
 	timerOSG.start(2);
 	connect(ui->loadButton, SIGNAL(clicked()), this, SLOT(button_slot()));
 	initCamera();
@@ -414,6 +417,7 @@ void MainWindow::drawColors()
 	std::swap(bb, bb_to_process);
 	mtx_bb.unlock();
 	// animar camino
+	osgWay->hide();
 	if(srcDstWay.size()>=2)
 	{
 		auto way = searchWay(src, dst);

@@ -99,7 +99,7 @@ private:
 	std::mutex mtx_cloud, mtx_rgb, mtx_bf, mtx_bb, mtx_exclude;
 	std::thread TprocessScene;
 
-	QTimer timerOSG;
+	QTimer timerOSG, timerSearchWay;
 	Ui::MainWindow *ui;
 	pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud;
 	pcl::PointCloud< pcl::PointXYZRGBA >::Ptr cloud_to_process;
