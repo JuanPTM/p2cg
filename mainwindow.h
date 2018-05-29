@@ -30,7 +30,7 @@
 #ifndef Q_MOC_RUN
 	#include <pcl/visualization/pcl_visualizer.h>
 #ifdef READ_DATA_FROM_DEVICE
-	#include <pcl/io/openni_grabber.h>
+	#include <pcl/io/openni2_grabber.h>
 #endif
 	#include <pcl/visualization/boost.h>
 
@@ -72,8 +72,8 @@ public:
 
 #ifdef READ_DATA_FROM_DEVICE
 	void computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud);
-	void computeImages(const boost::shared_ptr<openni_wrapper::Image> &);
-	void computeImages2(const boost::shared_ptr<openni_wrapper::DepthImage>&);
+	void computeImages(const boost::shared_ptr<pcl::io::openni2::Image> &);
+	void computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthImage>&);
 	void processScene();
 #else
 	void readPCD();
@@ -94,7 +94,7 @@ private:
 	std::map<float,rgb_color> paleta;
 	std::vector<point> srcDstWay;
 	std::vector<std::vector<point>>pointsByLevel;
-	std::vector<point> searchWay(point src, point dst);
+	// std::vector<point> searchWay(point src, point dst);
 	osgWay *osgway;
 	std::mutex mtx_cloud, mtx_rgb, mtx_bf, mtx_bb;
 	std::thread TprocessScene;

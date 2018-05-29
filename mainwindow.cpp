@@ -33,7 +33,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	timerOSG.start(2);
 	connect(ui->loadButton, SIGNAL(clicked()), this, SLOT(button_slot()));
 	initCamera();
-	TprocessScene = std::thread(&MainWindow::processScene, this);
+	// TprocessScene = std::thread(&MainWindow::processScene, this);
 }
 
 MainWindow::~MainWindow()
@@ -54,17 +54,17 @@ void MainWindow::initCamera()
 		try
 		{
 			// create a new grabber for OpenNI devices
-			// grabber = new pcl::io::OpenNI2Grabber();
-			grabber = new pcl::OpenNIGrabber();
+			grabber = new pcl::io::OpenNI2Grabber();
+			// grabber = new pcl::OpenNIGrabber();
 
 			// Register Callback Function
 			boost::function<void(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f = boost::bind(&MainWindow::computeRGBD, this, _1);
 			grabber->registerCallback(f);
 
-			boost::function<void(const boost::shared_ptr<openni_wrapper::Image> &)> f2 = boost::bind(&MainWindow::computeImages, this, _1);
+			boost::function<void(const boost::shared_ptr<pcl::io::openni2::Image> &)> f2 = boost::bind(&MainWindow::computeImages, this, _1);
 			grabber->registerCallback(f2);
 
-			boost::function<void(const boost::shared_ptr<openni_wrapper::DepthImage> &)> f3 = boost::bind(&MainWindow::computeImages2, this, _1);
+			boost::function<void(const boost::shared_ptr<pcl::io::openni2::DepthImage> &)> f3 = boost::bind(&MainWindow::computeImages2, this, _1);
 			grabber->registerCallback(f3);
 
 			// Start Retrieve Data
@@ -159,11 +159,11 @@ void MainWindow::computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr 
 		*cloud = *cloud_l;
 	removeNaNFromPointCloud(*cloud, *cloud, index);
 	mtx_cloud.unlock();
-	viewer->addPointCloud(cloud, "cloud", 0, 0, 0);
+	// viewer->addPointCloud(cloud, "cloud", 0, 0, 0);
 	viewer->update();
 }
 
-void MainWindow::computeImages(const boost::shared_ptr<openni_wrapper::Image> &o_image)
+void MainWindow::computeImages(const boost::shared_ptr<pcl::io::openni2::Image> &o_image)
 {
 	static unsigned count = 0;
 	count++;
@@ -175,7 +175,7 @@ void MainWindow::computeImages(const boost::shared_ptr<openni_wrapper::Image> &o
 	mtx_rgb.unlock();
 }
 
-void MainWindow::computeImages2(const boost::shared_ptr<openni_wrapper::DepthImage> &dimg)
+void MainWindow::computeImages2(const boost::shared_ptr<pcl::io::openni2::DepthImage> &dimg)
 {
 	static uint32_t count = 0;
 	count++;
@@ -208,33 +208,19 @@ void MainWindow::processScene()
 			boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
 			continue;
 		}
-		// Eliminamos los puntos del arenero y de el suelo
-		if(ui->checkBox->isChecked() || srcDstWay.size()>=2)
+		auto clouds_extracteds = euclideanClusteringDoN(cloud_to_process,n);
+		int i = 0;
+		std::cout <<  clouds_extracteds.size()<< " nubes detectadas\n";
+		// viewer->removeAllShapes();
+		// viewer->removeAllPointClouds();
+		for(auto nube:clouds_extracteds)
 		{
-			auto cloud_for_euclideanClustering = Filter_in_axis(cloud_to_process, "z", 0.0, 0.8, false);
-
-			// Si hay mas de 200 puntos realiza euclideanClustering
-			if (cloud_for_euclideanClustering->points.size() !=200)
+			std::cout << nube->points.size() << " numero de puntos de la nube\n"<<i;
+			if(nube->points.size()<20000)
 			{
-				// viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
-				cluster_clouds = euclideanClustering(cloud_for_euclideanClustering, n);
-				// int i=0;
-				// viewer->removeAllShapes();
-				srcDstWay.clear();
-				for(auto obj_scene : cluster_clouds)
-				{
-					// i++;
-					if(srcDstWay.size()<2)
-					{
-						auto center = getCentroid(obj_scene);
-						// focal = 485;
-						y = 485*center.x/center.z+640/2;
-						x = 485*center.y/center.z+480/2;
-						srcDstWay.push_back(point(x,y,0));
-						// viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
-						// viewer->drawBoundingBox(obj_scene, std::to_string(i));
-					}
-				}
+				viewer->addPointCloud(nube,std::to_string(i)+"nube",0,0,255);
+				viewer->drawBoundingBox(nube,std::to_string(i)+"box");
+				i++;
 			}
 		}
 		drawColors();
@@ -300,34 +286,29 @@ void MainWindow::button_slot()
 	mtx_rgb.unlock();
 	mtx_bf.unlock();
 	mtx_cloud.unlock();
-	if(ui->checkBox->isChecked() || srcDstWay.size()>=2)
+	std::cout << "a--------" << '\n';
+	if(cloud_to_process==NULL)
 	{
-		auto cloud_for_euclideanClustering = Filter_in_axis(cloud_to_process, "z", 0.0, 0.8, false);
-		if (cloud_for_euclideanClustering->points.size() !=0)
+		boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
+		return;
+	}
+	auto clouds_extracteds = euclideanClusteringDoN(cloud_to_process,n);
+	int i = 0;
+	std::cout <<  clouds_extracteds.size()<< " nubes detectadas\n";
+	// viewer->removeAllShapes();
+	// viewer->removeAllPointClouds();
+	for(auto nube:clouds_extracteds)
+	{
+		std::cout << nube->points.size() << " numero de puntos de la nube\n"<<i;
+		if(nube->points.size()<20000)
 		{
-			// viewer->addPointCloud(cloud_for_euclideanClustering, "cloud_for_euclideanClustering", 255, 0, 0);
-			std::vector<pcl::PointCloud<pcl::PointXYZRGBA>::Ptr> cluster_clouds = euclideanClustering(cloud_for_euclideanClustering,n);
-			int i=0;
-			viewer->removeAllShapes();
-			srcDstWay.clear();
-			for(auto obj_scene:cluster_clouds)
-			{
-				i++;
-				if(srcDstWay.size()<2)
-				{
-					auto center = getCentroid(obj_scene);
-					// Distancia focal 485pixel
-					float f = 485;
-					int y = f*center.x/center.z+640/2;
-					int x = f*center.y/center.z+480/2;
-					srcDstWay.push_back(point(x,y,0));
-					// viewer->addCoordinateSystem(center.x, center.y, center.z, std::to_string(i));
-					// viewer->drawBoundingBox(obj_scene, std::to_string(i));
-				}
-			}
+			viewer->addPointCloud(nube,std::to_string(i)+"nube",0,0,0);
+			viewer->drawBoundingBox(nube,std::to_string(i)+"box");
+			i++;
 		}
 	}
 	drawColors();
+
 }
 
 void MainWindow::processTags()
@@ -362,16 +343,16 @@ void MainWindow::processTags()
 
 void MainWindow::drawColors()
 {
-	point src,dst;
+	// point src,dst;
 	float minP = -1, maxP = -1;
 	cv::Mat mask = cv::Mat::zeros(480, 640, CV_8U);
-	cv::Mat out = cv::Mat::zeros(480, 640, CV_8U);
-	std::vector<float> disSrcDst(2,std::numeric_limits<float>::max());
+	// cv::Mat out = cv::Mat::zeros(480, 640, CV_8U);
+	// std::vector<float> disSrcDst(2,std::numeric_limits<float>::max());
 	uint32_t idx;
 	int level;
 
-	for(auto listLevel:pointsByLevel)
-	listLevel.clear();
+	// for(auto listLevel:pointsByLevel)
+	// listLevel.clear();
 
 	for (uint32_t r=0; r<480; r++)
 	{
@@ -400,21 +381,21 @@ void MainWindow::drawColors()
 				{
 					mask.at<uchar>((int)r,(int)c) = 255;
 				}
-				level = ceil(v/10.);
-				point p = point((int)r,(int)c,level);
-				if (srcDstWay.size() == 2)
-				for(unsigned int i=0; i < 2; i++)
-				{
-					if(srcDstWay.at(i).adjacentDistance(p)<disSrcDst.at(i))
-					{
-						disSrcDst.at(i) = srcDstWay.at(i).adjacentDistance(p);
-						if(i==1)
-							src = p;
-						else
-							dst = p;
-					}
-				}
-				pointsByLevel.at(level).push_back(p);
+				// level = ceil(v/10.);
+				// point p = point((int)r,(int)c,level);
+				// if (srcDstWay.size() == 2)
+				// for(unsigned int i=0; i < 2; i++)
+				// {
+				// 	if(srcDstWay.at(i).adjacentDistance(p)<disSrcDst.at(i))
+				// 	{
+				// 		disSrcDst.at(i) = srcDstWay.at(i).adjacentDistance(p);
+				// 		if(i==1)
+				// 			src = p;
+				// 		else
+				// 			dst = p;
+				// 	}
+				// }
+				// pointsByLevel.at(level).push_back(p);
 				rgb_color c = ucharize(v, paleta);
 				bb_to_process[idx*3 + 0] = (uint8_t)c.r;
 				bb_to_process[idx*3 + 1] = (uint8_t)c.g;
@@ -440,77 +421,77 @@ void MainWindow::drawColors()
 	std::swap(bb, bb_to_process);
 	mtx_bb.unlock();
 	// animar camino
-	if(srcDstWay.size()>=2)
-	{
-		auto way = searchWay(src, dst);
-		osgway->setWay(way);
-	}
+	// if(srcDstWay.size()>=2)
+	// {
+	// 	auto way = searchWay(src, dst);
+	// 	osgway->setWay(way);
+	// }
 }
 
-std::vector<point> MainWindow::searchWay(point src, point dst)
-{
-	std::vector<point> pointsToWay;
-	vector<int> way;
-	long dstIndex,srcIndex;
-	int min = std::min(src.getLevel(),dst.getLevel());
-	int max = std::max(src.getLevel(),dst.getLevel());
-	int value = 6;
-	do {
-		pointsToWay.clear();
-		for(int i = min; i<=max; i++)
-			pointsToWay.insert(pointsToWay.begin(), pointsByLevel[i].begin(), pointsByLevel[i].end());
-		pointsToWay = reduceListPoints(pointsToWay,value);
-		if(src.x%value!=0 || src.y%value!=0)
-			pointsToWay.push_back(src);
-		if(dst.x%value!=0 || dst.y%value !=0)
-			pointsToWay.push_back(dst);
-		if(min>0)
-		 	min--;
-		if(max<ceil(255./10)-1)
-		 	max++;
-
-		srcIndex = std::distance(pointsToWay.begin(), std::find(pointsToWay.begin(), pointsToWay.end(), src));
-		dstIndex = std::distance(pointsToWay.begin(), std::find(pointsToWay.begin(), pointsToWay.end(), dst));
-
-		way = dijk(srcIndex, dstIndex, pointsToWay,value);
-	} while(way.empty() || way.back() != dstIndex || way.front() != srcIndex);
-	std::vector<point> result;
-	for(auto const &i:way)
-		result.push_back(pointsToWay.at(i));
-	return result;
-/*
-	 for(auto const &i:way)
-	 {
-	 	int curX = pointsToWay[i].x;
-	 	int curY = pointsToWay[i].y;
-	 	for (int x =curX-value/2; x<curX+value/2; x++)
-	 		for (int y =curY-value/2; y<curY+value/2; y++)
-	 		{
-	 			if(x<0 || 480<=x || y<0 || 640<=y) continue;
-	 			int idx = x*640+y;
-	 			bb[idx*3 + 0] = bb[idx*3 + 1] = 0;
-	 			bb[idx*3 + 2] = 255;
-	 		}
-	 }
-	 int curX = src.x;
-	 int curY = src.y;
-	 for (int x =curX-value/2; x<curX+value/2; x++)
-	 	for (int y =curY-value/2; y<curY+value/2; y++)
-	 	{
-	 		if(x<0 || 480<=x || y<0 || 640<=y) continue;
-	 		int idx = x*640+y;
-	 		bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
-	 		bb[idx*3 + 0] = 255;
-	 	}
-	 curX = dst.x;
-	 curY = dst.y;
-	 for (int x =curX-value/2; x<curX+value/2; x++)
-	 	for (int y =curY-value/2; y<curY+value/2; y++)
-	 	{
-	 		if(x<0 || 480<=x || y<0 || 640<=y) continue;
-	 		int idx = x*640+y;
-	 		bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
-	 		bb[idx*3 + 0] = 255;
-	 	}
-*/
-}
+// std::vector<point> MainWindow::searchWay(point src, point dst)
+// {
+// 	std::vector<point> pointsToWay;
+// 	vector<int> way;
+// 	long dstIndex,srcIndex;
+// 	int min = std::min(src.getLevel(),dst.getLevel());
+// 	int max = std::max(src.getLevel(),dst.getLevel());
+// 	int value = 6;
+// 	do {
+// 		pointsToWay.clear();
+// 		for(int i = min; i<=max; i++)
+// 			pointsToWay.insert(pointsToWay.begin(), pointsByLevel[i].begin(), pointsByLevel[i].end());
+// 		pointsToWay = reduceListPoints(pointsToWay,value);
+// 		if(src.x%value!=0 || src.y%value!=0)
+// 			pointsToWay.push_back(src);
+// 		if(dst.x%value!=0 || dst.y%value !=0)
+// 			pointsToWay.push_back(dst);
+// 		if(min>0)
+// 		 	min--;
+// 		if(max<ceil(255./10)-1)
+// 		 	max++;
+//
+// 		srcIndex = std::distance(pointsToWay.begin(), std::find(pointsToWay.begin(), pointsToWay.end(), src));
+// 		dstIndex = std::distance(pointsToWay.begin(), std::find(pointsToWay.begin(), pointsToWay.end(), dst));
+//
+// 		way = dijk(srcIndex, dstIndex, pointsToWay,value);
+// 	} while(way.empty() || way.back() != dstIndex || way.front() != srcIndex);
+// 	std::vector<point> result;
+// 	for(auto const &i:way)
+// 		result.push_back(pointsToWay.at(i));
+// 	return result;
+// /*
+// 	 for(auto const &i:way)
+// 	 {
+// 	 	int curX = pointsToWay[i].x;
+// 	 	int curY = pointsToWay[i].y;
+// 	 	for (int x =curX-value/2; x<curX+value/2; x++)
+// 	 		for (int y =curY-value/2; y<curY+value/2; y++)
+// 	 		{
+// 	 			if(x<0 || 480<=x || y<0 || 640<=y) continue;
+// 	 			int idx = x*640+y;
+// 	 			bb[idx*3 + 0] = bb[idx*3 + 1] = 0;
+// 	 			bb[idx*3 + 2] = 255;
+// 	 		}
+// 	 }
+// 	 int curX = src.x;
+// 	 int curY = src.y;
+// 	 for (int x =curX-value/2; x<curX+value/2; x++)
+// 	 	for (int y =curY-value/2; y<curY+value/2; y++)
+// 	 	{
+// 	 		if(x<0 || 480<=x || y<0 || 640<=y) continue;
+// 	 		int idx = x*640+y;
+// 	 		bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
+// 	 		bb[idx*3 + 0] = 255;
+// 	 	}
+// 	 curX = dst.x;
+// 	 curY = dst.y;
+// 	 for (int x =curX-value/2; x<curX+value/2; x++)
+// 	 	for (int y =curY-value/2; y<curY+value/2; y++)
+// 	 	{
+// 	 		if(x<0 || 480<=x || y<0 || 640<=y) continue;
+// 	 		int idx = x*640+y;
+// 	 		bb[idx*3 + 1] = bb[idx*3 + 2] = 0;
+// 	 		bb[idx*3 + 0] = 255;
+// 	 	}
+// */
+// }
