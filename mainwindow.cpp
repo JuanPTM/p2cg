@@ -30,9 +30,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	// viewer = new pcl::visualization::CloudViewer("cloud");
 
 	connect(&timerOSG, SIGNAL(timeout()), this, SLOT(computeOSG()));
+#ifdef READ_DATA_FROM_DEVICE
 	connect(&timerSearchWay, SIGNAL(timeout()), this, SLOT(button_slot()));
-
 	timerSearchWay.start(15000);
+#endif
 	timerOSG.start(2);
 	connect(ui->loadButton, SIGNAL(clicked()), this, SLOT(button_slot()));
 	initCamera();
