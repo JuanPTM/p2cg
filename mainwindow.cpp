@@ -136,7 +136,7 @@ void MainWindow::init3D()
 
 void MainWindow::computeOSG()
 {
-	memcpy(cv_image.data, rgb, 640*480*3);
+	memcpy(cv_image.data, rgb_to_process, 640*480*3);
 	cv::cvtColor(cv_image, cv_image, cv::COLOR_BGR2RGB);
 	imshow("Image", cv_image);
 	cvWaitKey(1);
@@ -315,8 +315,8 @@ void MainWindow::processTags()
 	//Apagar luces
 	luzroja->switchLuz(false);
 	// float k=1.3;
-	luzblanca->move(-10.24*Kfactor/2, 7.68*Kfactor/2, -100);
-	luzblanca->switchLuz(true);
+	//luzblanca->move(-10.24*Kfactor/2, 7.68*Kfactor/2, -100);
+	luzblanca->switchLuz(false);
   	//Procesar AprilTags
 	Mat imgray;
 	cv::cvtColor(cv_image, imgray, cv::COLOR_RGB2GRAY);
