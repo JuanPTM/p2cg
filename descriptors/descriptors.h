@@ -13,7 +13,7 @@
 #include <pcl/io/pcd_io.h>
 #include <boost/filesystem.hpp>
 #include <QMutex>
-#include "pointcloud/pointcloud.h"
+// #include "pointcloud/pointcloud.h"
 
 #include <flann/flann.h>
 #include <flann/io/hdf5.h>
@@ -21,8 +21,8 @@
 #define DESCRIPTORS_FILES_EXTENSION ".pcd"
 
 typedef std::pair<std::string, std::vector<float> > descriptors_model;
-typedef pcl::PointXYZRGB PointT;
-using namespace computepointcloud;
+typedef pcl::PointXYZRGBA PointT;
+// using namespace computepointcloud;
 class DESCRIPTORS
 {
 	std::string kdtree_idx_file_name;
@@ -42,6 +42,11 @@ public:
 		std::string file;
 		std::string label;
 		float dist;
+		friend std::ostream& operator<<(std::ostream& os, const file_dist_t& p)
+		{
+			os << "file: "<<p.file << " label: "<< p.label<< " dist: "<<p.dist;
+			return os;
+		}
 	};
 	void set_type_feature(std::string feature);
 

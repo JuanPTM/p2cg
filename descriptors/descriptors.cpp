@@ -130,32 +130,32 @@ void DESCRIPTORS::computeDESCRIPTORShistogram(pcl::PointCloud<PointT>::Ptr cloud
 	}
 	else if(type_feature== "OUR-CVFH")
 	{
-		pcl::PointCloud<PointT>::Ptr cloud_c=PointCloudfrom_mm_to_Meters(copy_pointcloud(cloud));
-		//create normal estimation class, and pass the input cloud
-		pcl::NormalEstimation<PointT, pcl::Normal> ne;
-		ne.setInputCloud (cloud_c);
-
-		//Create empty kdetree representation, and pass it to the normal estimation object.
-		//its content will be filled inside the object based on the given input.
-		pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT> ());
-		ne.setSearchMethod (tree);
-		//set radious of the neighbors to use (1 cm)
-		ne.setRadiusSearch(0.01f);
-		//computing normals
-		ne.compute(*cloud_normals);
-
-		// OUR-CVFH estimation object.
-		pcl::OURCVFHEstimation<PointT, pcl::Normal, pcl::VFHSignature308> ourcvfh;
-		ourcvfh.setInputCloud(cloud_c);
-		ourcvfh.setInputNormals(cloud_normals);
-		ourcvfh.setSearchMethod(descriptorstree);
-		ourcvfh.setEPSAngleThreshold(5.0 / 180.0 * M_PI); // 5 degrees.
-		ourcvfh.setCurvatureThreshold(1.0);
-		ourcvfh.setNormalizeBins(false);
-		// Set the minimum axis ratio between the SGURF axes. At the disambiguation phase,
-		// this will decide if additional Reference Frames need to be created, if ambiguous.
-		ourcvfh.setAxisRatio(1);
-		ourcvfh.compute(*descriptors);
+		// pcl::PointCloud<PointT>::Ptr cloud_c = cloud;
+		// //create normal estimation class, and pass the input cloud
+		// pcl::NormalEstimation<PointT, pcl::Normal> ne;
+		// ne.setInputCloud (cloud);
+		//
+		// //Create empty kdetree representation, and pass it to the normal estimation object.
+		// //its content will be filled inside the object based on the given input.
+		// pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT> ());
+		// ne.setSearchMethod (tree);
+		// //set radious of the neighbors to use (1 cm)
+		// ne.setRadiusSearch(0.01f);
+		// //computing normals
+		// ne.compute(*cloud_normals);
+		//
+		// // OUR-CVFH estimation object.
+		// pcl::OURCVFHEstimation<PointT, pcl::Normal, pcl::VFHSignature308> ourcvfh;
+		// ourcvfh.setInputCloud(cloud);
+		// ourcvfh.setInputNormals(cloud_normals);
+		// ourcvfh.setSearchMethod(descriptorstree);
+		// ourcvfh.setEPSAngleThreshold(5.0 / 180.0 * M_PI); // 5 degrees.
+		// ourcvfh.setCurvatureThreshold(1.0);
+		// ourcvfh.setNormalizeBins(false);
+		// // Set the minimum axis ratio between the SGURF axes. At the disambiguation phase,
+		// // this will decide if additional Reference Frames need to be created, if ambiguous.
+		// ourcvfh.setAxisRatio(1);
+		// ourcvfh.compute(*descriptors);
 	}
 }
 

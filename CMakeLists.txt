@@ -11,7 +11,8 @@ set(SOURCES main.cpp
             Luz/luz.cpp
             viewer/viewer.cpp
             osgWay/osgWay.cpp
-            processfunction/processfunction.cpp )
+            processfunction/processfunction.cpp
+            descriptors/descriptors.cpp )
 
 set(CMAKE_CXX_STANDARD 14)
 

@@ -33,6 +33,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 	timerOSG.start(2);
 	connect(ui->loadButton, SIGNAL(clicked()), this, SLOT(button_slot()));
 	initCamera();
+	descriptor_matcher = boost::shared_ptr<DESCRIPTORS>(new DESCRIPTORS());
+  descriptor_matcher->set_type_feature("VFH");
+	if(descriptor_matcher->readFilesAndComputeDESCRIPTORS("../TrainSet/","../TrainSet/"))
+	{
+		descriptor_matcher->reloadDESCRIPTORS("../TrainSet/");
+		descriptor_matcher->loadTrainingData();
+	}
 	// TprocessScene = std::thread(&MainWindow::processScene, this);
 }
 
@@ -159,7 +166,7 @@ void MainWindow::computeRGBD(const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr 
 		*cloud = *cloud_l;
 	removeNaNFromPointCloud(*cloud, *cloud, index);
 	mtx_cloud.unlock();
-	// viewer->addPointCloud(cloud, "cloud", 0, 0, 0);
+	viewer->addPointCloud(cloud, "cloud", 0, 0, 0);
 	viewer->update();
 }
 
@@ -297,15 +304,44 @@ void MainWindow::button_slot()
 	std::cout <<  clouds_extracteds.size()<< " nubes detectadas\n";
 	// viewer->removeAllShapes();
 	// viewer->removeAllPointClouds();
+	pcl::PointCloud<pcl::PointXYZRGBA>::Ptr union_clouds = pcl::PointCloud< pcl::PointXYZRGBA >::Ptr(new pcl::PointCloud<pcl::PointXYZRGBA>());
 	for(auto nube:clouds_extracteds)
 	{
 		std::cout << nube->points.size() << " numero de puntos de la nube\n"<<i;
 		if(nube->points.size()<20000)
 		{
-			viewer->addPointCloud(nube,std::to_string(i)+"nube",0,0,0);
-			viewer->drawBoundingBox(nube,std::to_string(i)+"box");
+			*union_clouds += *nube;
+			// viewer->addPointCloud(nube,std::to_string(i)+"nube",0,0,0);
+			// viewer->drawBoundingBox(nube,std::to_string(i)+"box");
 			i++;
 		}
+	}
+	clouds_extracteds = euclideanClustering(union_clouds,n);
+	i=0;
+	for(auto nube:clouds_extracteds)
+	{
+		// pcl::io::savePCDFileASCII (std::string("objeto")+std::to_string(i)+std::string(".pcd"), *nube);
+		viewer->drawBoundingBox(nube,std::to_string(i)+"box");
+		// auto center = getCentroid(nube);
+		// viewer->addText3D(std::string("objeto")+std::to_string(i)+std::string(".pcd"), center);
+		std::vector<DESCRIPTORS::file_dist_t> guesses;
+		descriptor_matcher->doTheGuess(nube, guesses);
+		DESCRIPTORS::file_dist_t first, second;
+		first=guesses[0];
+		for(auto match:guesses)
+		{
+			if(first.label != match.label)
+			{
+				second = match;
+				break;
+			}
+		}
+		if(first.dist/second.dist<0.8)
+		{
+			std::cout << "este objeto es " <<first.label << " probabilidad : "<< first.dist/second.dist << '\n';
+		}
+		std::cout << '\n';
+		i++;
 	}
 	drawColors();
 

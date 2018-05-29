@@ -21,6 +21,7 @@
 
 #include "computepointcloud/computepointcloud.h"
 #include "processfunction/processfunction.h"
+#include "descriptors/descriptors.h"
 #include "osgWay/osgWay.h"
 #include "types/types.h"
 #include "opencv2/highgui/highgui.hpp"
@@ -91,6 +92,8 @@ private slots:
 
 
 private:
+	boost::shared_ptr<DESCRIPTORS> descriptor_matcher;
+
 	std::map<float,rgb_color> paleta;
 	std::vector<point> srcDstWay;
 	std::vector<std::vector<point>>pointsByLevel;
