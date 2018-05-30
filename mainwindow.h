@@ -3,7 +3,7 @@
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-#define READ_DATA_FROM_DEVICE
+// #define READ_DATA_FROM_DEVICE
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -54,7 +54,8 @@
 #include <mutex>
 #include <thread>
 #include <algorithm>
-
+#include <osgText/Font>
+#include <osgText/Text>
 using namespace cv;
 using namespace computepointcloud;
 using namespace processfunction;

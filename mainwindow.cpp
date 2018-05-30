@@ -152,6 +152,9 @@ void MainWindow::computeOSG()
 	osgw->frame();
 	processTags();
 	osgway->update();
+#ifndef READ_DATA_FROM_DEVICE
+	viewer->update();
+#endif
 }
 
 #ifdef READ_DATA_FROM_DEVICE
@@ -320,7 +323,7 @@ void MainWindow::button_slot()
 	i=0;
 	for(auto nube:clouds_extracteds)
 	{
-		// pcl::io::savePCDFileASCII (std::string("objeto")+std::to_string(i)+std::string(".pcd"), *nube);
+		pcl::io::savePCDFileASCII (std::string("objeto")+std::to_string(i)+std::string(".pcd"), *nube);
 		viewer->drawBoundingBox(nube,std::to_string(i)+"box");
 		// auto center = getCentroid(nube);
 		// viewer->addText3D(std::string("objeto")+std::to_string(i)+std::string(".pcd"), center);
@@ -336,9 +339,32 @@ void MainWindow::button_slot()
 				break;
 			}
 		}
+
 		if(first.dist/second.dist<0.8)
 		{
-			std::cout << "este objeto es " <<first.label << " probabilidad : "<< first.dist/second.dist << '\n';
+			std::cout << "poniendo texto" <<first.label << " probabilidad : "<< first.dist/second.dist << '\n';
+			osg::Geode* shapeGeode = new osg::Geode();
+			osg::PositionAttitudeTransform *pat = new osg::PositionAttitudeTransform();
+			osg::Vec4 layoutColor(1.0f,1.0f,0.0f,1.0f);
+			float layoutCharacterSize = 20.0f;
+			osgText::Text* text = new osgText::Text;
+			osgText::Font* font = osgText::readFontFile("fonts/arial.ttf");
+			text->setFont(font);
+			text->setColor(layoutColor);
+			text->setCharacterSize(layoutCharacterSize);
+			text->setPosition(osg::Vec3(0.,0.,0.0f));
+			text->setLayout(osgText::Text::LEFT_TO_RIGHT);
+			text->setText(first.label + " " + std::to_string(first.dist/second.dist));
+			auto center = getCentroid(nube);
+			shapeGeode->addDrawable(text);
+			float f = 485;
+			int y = f*center.x/center.z+640/2;
+			int x = f*center.y/center.z+480/2;
+			float y2 = ((x *(5.12*Kfactor/320)));
+			float x2 = ((y *(3.84*Kfactor/240)));
+			pat->setPosition(osg::Vec3(x2, y2,-0.5f));
+			text->update();
+			osgw->getRootGroup()->addChild(pat);
 		}
 		std::cout << '\n';
 		i++;
